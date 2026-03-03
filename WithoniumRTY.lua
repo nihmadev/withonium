@@ -1522,6 +1522,19 @@ local function createSettings(window)
 	saveSettings()
 end
 
+
+
+local function setVisibility(visibility: boolean, notify: boolean?)
+	if Debounce then return end
+	if visibility then
+		Hidden = false
+		Unhide()
+	else
+		Hidden = true
+		Hide(notify)
+	end
+end
+
 function WithoniumRTYLibrary:CreateWindow(Settings)
 	if false and WithoniumRTY:FindFirstChild('Loading') then
 		if getgenv and not getgenv().WithoniumRTYCached then
@@ -2009,10 +2022,10 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 		end)
 
 		local Tab = {}
-		local function ApplyTabMethods(Tab, TabPage)
+		local function ApplyTabMethods(TargetTab, TabPage)
 			local SDone = false
 
-		function Tab:Clear()
+		function TargetTab:Clear()
 			for _, child in ipairs(TabPage:GetChildren()) do
 				if child.ClassName == "Frame" and child.Name ~= "Placeholder" then
 					child:Destroy()
@@ -2022,7 +2035,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 			end
 			SDone = false
 		end
-		function Tab:CreateButton(ButtonSettings)
+		function TargetTab:CreateButton(ButtonSettings)
 			local ButtonValue = {}
 
 			local Button = Elements.Template.Button:Clone()
@@ -2114,7 +2127,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return ButtonValue
 		end
-		function Tab:CreateColorPicker(ColorPickerSettings)
+		function TargetTab:CreateColorPicker(ColorPickerSettings)
 			ColorPickerSettings.Type = "ColorPicker"
 			local ColorPicker = Elements.Template.ColorPicker:Clone()
 			local Background = ColorPicker.CPBackground
@@ -2363,7 +2376,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return ColorPickerSettings
 		end
-		function Tab:CreateSection(SectionName)
+		function TargetTab:CreateSection(SectionName)
 			local SectionValue = {}
 			if SDone then
 				local Divider = Elements.Template.Divider:Clone()
@@ -2402,7 +2415,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return SectionValue
 		end
-		function Tab:CreateDivider()
+		function TargetTab:CreateDivider()
 			local DividerValue = {}
 
 			local Divider = Elements.Template.Divider:Clone()
@@ -2425,7 +2438,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 			return DividerValue
 		end
 
-		function Tab:CreateLabel(LabelText : string, Icon: number, Color : Color3, IgnoreTheme : boolean)
+		function TargetTab:CreateLabel(LabelText : string, Icon: number, Color : Color3, IgnoreTheme : boolean)
 			local LabelValue = {}
 
 			local Label = Elements.Template.Label:Clone()
@@ -2524,7 +2537,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return LabelValue
 		end
-		function Tab:CreateParagraph(ParagraphSettings)
+		function TargetTab:CreateParagraph(ParagraphSettings)
 			local ParagraphValue = {}
 
 			local Paragraph = Elements.Template.Paragraph:Clone()
@@ -2558,7 +2571,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return ParagraphValue
 		end
-		function Tab:CreateInput(InputSettings)
+		function TargetTab:CreateInput(InputSettings)
 			local Input = Elements.Template.Input:Clone()
 			Input.Name = InputSettings.Name
 			Input.Title.Text = InputSettings.Name
@@ -2645,7 +2658,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return InputSettings
 		end
-		function Tab:CreateDropdown(DropdownSettings)
+		function TargetTab:CreateDropdown(DropdownSettings)
 			local Dropdown = Elements.Template.Dropdown:Clone()
 			if string.find(DropdownSettings.Name,"closed") then
 				Dropdown.Name = "Dropdown"
@@ -2959,7 +2972,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return DropdownSettings
 		end
-		function Tab:CreateKeybind(KeybindSettings)
+		function TargetTab:CreateKeybind(KeybindSettings)
 			local CheckingForKey = false
 			local Keybind = Elements.Template.Keybind:Clone()
 			Keybind.Name = KeybindSettings.Name
@@ -3096,7 +3109,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return KeybindSettings
 		end
-		function Tab:CreateToggle(ToggleSettings)
+		function TargetTab:CreateToggle(ToggleSettings)
 			local ToggleValue = {}
 
 			local Toggle = Elements.Template.Toggle:Clone()
@@ -3265,7 +3278,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return ToggleSettings
 		end
-		function Tab:CreateSlider(SliderSettings)
+		function TargetTab:CreateSlider(SliderSettings)
 			local SLDragging = false
 			local Slider = Elements.Template.Slider:Clone()
 			Slider.Name = SliderSettings.Name
@@ -3440,6 +3453,15 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 		function Tab:Split(ratio)
 			ratio = ratio or 0.75
 			
+			-- Clear existing layout in TabPage if any
+			local list = TabPage:FindFirstChildOfClass("UIListLayout")
+			if list and list:IsA("UIListLayout") then
+				local success = pcall(function() list.Enabled = false end)
+				if not success then
+					list:Destroy() -- Fallback if Enabled isn't supported (though it should be for UIListLayout)
+				end
+			end
+			
 			local Container = Instance.new("Frame")
 			Container.Name = "SplitContainer"
 			Container.Size = UDim2.new(1, 0, 1, 0)
@@ -3459,13 +3481,17 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 				SubPage.Visible = true
 				SubPage.Parent = Container
 				
+				-- Clear template elements
 				for _, child in ipairs(SubPage:GetChildren()) do
 					if child.ClassName == "Frame" and child.Name ~= "Placeholder" then
 						child:Destroy()
 					end
 				end
 
-				-- Ensure layout for sub-page elements
+				-- Fix for UIListLayout
+				local oldLayout = SubPage:FindFirstChildOfClass("UIListLayout")
+				if oldLayout then oldLayout:Destroy() end
+
 				local SubLayout = Instance.new("UIListLayout")
 				SubLayout.SortOrder = Enum.SortOrder.LayoutOrder
 				SubLayout.Padding = UDim.new(0, 5)
@@ -3476,9 +3502,10 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 				return SubTab
 			end
 			
-			local LeftTab, RightTab = CreateSubPage("Left", ratio), CreateSubPage("Right", 1 - ratio)
+			local Left = CreateSubPage("Left", ratio)
+			local Right = CreateSubPage("Right", 1 - ratio)
 			
-			return LeftTab, RightTab
+			return Left, Right
 		end
 
 		WithoniumRTY.Main:GetPropertyChangedSignal('BackgroundColor3'):Connect(function()
@@ -3543,6 +3570,8 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 		return setVisibility(Hidden, not useMobileSizing)
 	end
 
+	pcall(createSettings, Window)
+
 	WithoniumRTYLibrary:Notify({
 		Title = "Interface Loaded",
 		Content = "This cheat uses a fork of RayField UI Library — WithoniumRTY.",
@@ -3551,17 +3580,6 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 	})
 
 	return Window
-end
-
-local function setVisibility(visibility: boolean, notify: boolean?)
-	if Debounce then return end
-	if visibility then
-		Hidden = false
-		Unhide()
-	else
-		Hidden = true
-		Hide(notify)
-	end
 end
 
 function WithoniumRTYLibrary:SetVisibility(visibility: boolean)
