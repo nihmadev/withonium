@@ -749,12 +749,14 @@ local function loadWithTimeout(url: string, timeout: number?): ...any
 	url = url:gsub("^%s*(.-)%s*$", "%1")
 	if not url:find("^http") then return false, "Invalid protocol" end
 
-	timeout = timeout or 5
+	timeout = timeout or 15
 	local requestCompleted = false
 	local success, result = false, nil
 
 	local requestThread = task.spawn(function()
 		local fetchSuccess, fetchResult
+		
+		
 		local requestFunc = (syn and syn.request) or (fluxus and fluxus.request) or (http and http.request) or http_request or request
 		if requestFunc then
 			fetchSuccess, fetchResult = pcall(function()
@@ -762,16 +764,20 @@ local function loadWithTimeout(url: string, timeout: number?): ...any
 					Url = url,
 					Method = "GET"
 				})
-				if res and res.Success then
+				if res and res.StatusCode == 200 then
 					return res.Body
 				end
-				error(res and res.StatusCode or "Unknown error")
+				error(res and ("HTTP " .. tostring(res.StatusCode)) or "Unknown error!")
 			end)
 		else
 			
-			fetchSuccess, fetchResult = pcall(function()
-				return game:HttpGet(url)
-			end)
+			for i = 1, 3 do
+				fetchSuccess, fetchResult = pcall(function()
+					return game:HttpGet(url)
+				end)
+				if fetchSuccess and fetchResult and #fetchResult > 0 then break end
+				task.wait(1)
+			end
 		end
 
 		if not fetchSuccess or not fetchResult or #fetchResult == 0 then
@@ -802,18 +808,6 @@ local function loadWithTimeout(url: string, timeout: number?): ...any
 end
 
 local function loadLibrary(): any
-	
-	local localPath = "WithoniumRTY.lua"
-	if isfile and isfile(localPath) then
-		local success, result = pcall(function()
-			return loadstring(readfile(localPath))()
-		end)
-		if success and result then
-			return result
-		end
-	end
-
-	
 	local success, result = loadWithTimeout("https://raw.githubusercontent.com/nihmadev/Withonium/refs/heads/main/WithoniumRTY.lua")
 	if success and result then
 		return result
@@ -1006,7 +1000,7 @@ function GUI.Init(Settings, Utils, UnloadCallback, ConfigManager)
         Name = "Withonium",
         LoadingTitle = "Withonium",
         LoadingSubtitle = "by nihmadev",
-        Icon = "https://withonium.gt.tc/icon.png",
+        Icon = "https://github.com/nihmadev/Withonium/raw/main/icon.png",
         ConfigurationSaving = {
             Enabled = true,
             FolderName = "Withonium",

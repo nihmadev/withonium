@@ -15,7 +15,7 @@ local function loadWithTimeout(url: string, timeout: number?): ...any
 		return nil
 	end
 
-	timeout = timeout or 5
+	timeout = timeout or 15
 	local requestCompleted = false
 	local success, result = false, nil
 
@@ -30,16 +30,20 @@ local function loadWithTimeout(url: string, timeout: number?): ...any
 					Url = url,
 					Method = "GET"
 				})
-				if res and res.Success then
+				if res and res.StatusCode == 200 then
 					return res.Body
 				end
-				error(res and res.StatusCode or "Unknown error")
+				error(res and ("HTTP " .. tostring(res.StatusCode)) or "Unknown error")
 			end)
 		else
-			-- Fallback to HttpGet
-			fetchSuccess, fetchResult = pcall(function()
-				return game:HttpGet(url)
-			end)
+			-- Fallback to HttpGet with retry
+			for i = 1, 3 do
+				fetchSuccess, fetchResult = pcall(function()
+					return game:HttpGet(url)
+				end)
+				if fetchSuccess and fetchResult and #fetchResult > 0 then break end
+				task.wait(1)
+			end
 		end
 
 		if not fetchSuccess or not fetchResult or #fetchResult == 0 then
@@ -994,11 +998,13 @@ function WithoniumRTYLibrary:Notify(data)
 			if typeof(data.Image) == 'string' and Icons then
 				local asset = getIcon(data.Image)
 
-				if asset and asset.id then
-					newNotification.Icon.Image = 'rbxassetid://'..tostring(asset.id)
+				if asset then
+					if asset.id then
+						newNotification.Icon.Image = 'rbxassetid://'..tostring(asset.id)
+					end
+					newNotification.Icon.ImageRectOffset = asset.imageRectOffset
+					newNotification.Icon.ImageRectSize = asset.imageRectSize
 				end
-				newNotification.Icon.ImageRectOffset = asset.imageRectOffset
-				newNotification.Icon.ImageRectSize = asset.imageRectSize
 			else
 				newNotification.Icon.Image = getAssetUri(data.Image)
 			end
@@ -1516,8 +1522,6 @@ local function createSettings(window)
 	saveSettings()
 end
 
-
-
 function WithoniumRTYLibrary:CreateWindow(Settings)
 	if false and WithoniumRTY:FindFirstChild('Loading') then
 		if getgenv and not getgenv().WithoniumRTYCached then
@@ -2005,10 +2009,10 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 		end)
 
 		local Tab = {}
-		local function ApplyTabMethods(TargetTab, TabPage)
-		local SDone = false
+		local function ApplyTabMethods(Tab, TabPage)
+			local SDone = false
 
-		function TargetTab:Clear()
+		function Tab:Clear()
 			for _, child in ipairs(TabPage:GetChildren()) do
 				if child.ClassName == "Frame" and child.Name ~= "Placeholder" then
 					child:Destroy()
@@ -2018,7 +2022,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 			end
 			SDone = false
 		end
-		function TargetTab:CreateButton(ButtonSettings)
+		function Tab:CreateButton(ButtonSettings)
 			local ButtonValue = {}
 
 			local Button = Elements.Template.Button:Clone()
@@ -2359,7 +2363,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return ColorPickerSettings
 		end
-		function TargetTab:CreateSection(SectionName)
+		function Tab:CreateSection(SectionName)
 			local SectionValue = {}
 			if SDone then
 				local Divider = Elements.Template.Divider:Clone()
@@ -2398,7 +2402,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return SectionValue
 		end
-		function TargetTab:CreateDivider()
+		function Tab:CreateDivider()
 			local DividerValue = {}
 
 			local Divider = Elements.Template.Divider:Clone()
@@ -2421,7 +2425,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 			return DividerValue
 		end
 
-		function TargetTab:CreateLabel(LabelText : string, Icon: number, Color : Color3, IgnoreTheme : boolean)
+		function Tab:CreateLabel(LabelText : string, Icon: number, Color : Color3, IgnoreTheme : boolean)
 			local LabelValue = {}
 
 			local Label = Elements.Template.Label:Clone()
@@ -2520,7 +2524,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return LabelValue
 		end
-		function TargetTab:CreateParagraph(ParagraphSettings)
+		function Tab:CreateParagraph(ParagraphSettings)
 			local ParagraphValue = {}
 
 			local Paragraph = Elements.Template.Paragraph:Clone()
@@ -2554,7 +2558,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return ParagraphValue
 		end
-		function TargetTab:CreateInput(InputSettings)
+		function Tab:CreateInput(InputSettings)
 			local Input = Elements.Template.Input:Clone()
 			Input.Name = InputSettings.Name
 			Input.Title.Text = InputSettings.Name
@@ -2641,7 +2645,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return InputSettings
 		end
-		function TargetTab:CreateDropdown(DropdownSettings)
+		function Tab:CreateDropdown(DropdownSettings)
 			local Dropdown = Elements.Template.Dropdown:Clone()
 			if string.find(DropdownSettings.Name,"closed") then
 				Dropdown.Name = "Dropdown"
@@ -2955,7 +2959,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return DropdownSettings
 		end
-		function TargetTab:CreateKeybind(KeybindSettings)
+		function Tab:CreateKeybind(KeybindSettings)
 			local CheckingForKey = false
 			local Keybind = Elements.Template.Keybind:Clone()
 			Keybind.Name = KeybindSettings.Name
@@ -3092,7 +3096,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return KeybindSettings
 		end
-		function TargetTab:CreateToggle(ToggleSettings)
+		function Tab:CreateToggle(ToggleSettings)
 			local ToggleValue = {}
 
 			local Toggle = Elements.Template.Toggle:Clone()
@@ -3261,7 +3265,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return ToggleSettings
 		end
-		function TargetTab:CreateSlider(SliderSettings)
+		function Tab:CreateSlider(SliderSettings)
 			local SLDragging = false
 			local Slider = Elements.Template.Slider:Clone()
 			Slider.Name = SliderSettings.Name
@@ -3436,10 +3440,6 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 		function Tab:Split(ratio)
 			ratio = ratio or 0.75
 			
-			-- Clear existing layout in TabPage if any
-			local list = TabPage:FindFirstChildOfClass("UIListLayout")
-			if list then list.Enabled = false end
-			
 			local Container = Instance.new("Frame")
 			Container.Name = "SplitContainer"
 			Container.Size = UDim2.new(1, 0, 1, 0)
@@ -3459,22 +3459,26 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 				SubPage.Visible = true
 				SubPage.Parent = Container
 				
-				-- Clear template elements
 				for _, child in ipairs(SubPage:GetChildren()) do
 					if child.ClassName == "Frame" and child.Name ~= "Placeholder" then
 						child:Destroy()
 					end
 				end
+
+				-- Ensure layout for sub-page elements
+				local SubLayout = Instance.new("UIListLayout")
+				SubLayout.SortOrder = Enum.SortOrder.LayoutOrder
+				SubLayout.Padding = UDim.new(0, 5)
+				SubLayout.Parent = SubPage
 				
 				local SubTab = {}
 				ApplyTabMethods(SubTab, SubPage)
 				return SubTab
 			end
 			
-			local Left = CreateSubPage("Left", ratio)
-			local Right = CreateSubPage("Right", 1 - ratio)
+			local LeftTab, RightTab = CreateSubPage("Left", ratio), CreateSubPage("Right", 1 - ratio)
 			
-			return Left, Right
+			return LeftTab, RightTab
 		end
 
 		WithoniumRTY.Main:GetPropertyChangedSignal('BackgroundColor3'):Connect(function()
@@ -3538,11 +3542,6 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 	function Window:Toggle()
 		return setVisibility(Hidden, not useMobileSizing)
 	end
-
-	local success, result = pcall(function()
-	end)
-
-	if not success then warn('WithoniumRTY had an issue creating settings.') end
 
 	WithoniumRTYLibrary:Notify({
 		Title = "Interface Loaded",
