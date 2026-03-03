@@ -1868,7 +1868,7 @@ local Settings = {
     guiVisible = true,
     watermarkEnabled = true,
     toggleKey = Enum.KeyCode.RightShift,
-    logoId = "C:\\Users\\gg\\Desktop\\2\\icon.png"
+    logoId = "https://github.com/nihmadev/Withonium/raw/main/icon.png"
 }
 
 return Settings
