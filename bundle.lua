@@ -894,7 +894,7 @@ function GUI.Init(Settings, Utils, UnloadCallback, ConfigManager)
         GUI.ScreenGui.ResetOnSpawn = false
         GUI.ScreenGui.DisplayOrder = 100
         GUI.ScreenGui.Parent = gui_parent
-        GUI.ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        GUI.ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global 
 
         
         GUI.Watermark.Frame = Instance.new("Frame")
@@ -1494,8 +1494,15 @@ function GUI.Init(Settings, Utils, UnloadCallback, ConfigManager)
         Callback = function(Value) Settings.antiAfkInterval = Value end
     })
     local SettingsTab = GUI.Window:CreateTab("Settings", 7072721682)
-    local MainSettings, ConfigsSide = SettingsTab:Split(0.75)
+    local MainSettings, ConfigsSide = SettingsTab:Split(0.55)
     
+    
+    local function getConfigsTable()
+        if not GUI.ConfigManager then return {} end
+        local configs = GUI.ConfigManager.List()
+        return type(configs) == "table" and configs or {}
+    end
+
     MainSettings:CreateSection("Config Creation")
     MainSettings:CreateInput({
         Name = "New Config Name",
@@ -1524,7 +1531,7 @@ function GUI.Init(Settings, Utils, UnloadCallback, ConfigManager)
  
     GUI.UpdateConfigList(ConfigsSide, Settings)
 
-    MainSettings:CreateSection("Menu Customization")
+    MainSettings:CreateSection("KeybinsList & Watermark")
     GUI.Elements.Toggles["watermarkEnabled"] = MainSettings:CreateToggle({
         Name = "Watermark",
         CurrentValue = Settings.watermarkEnabled,
@@ -1565,12 +1572,47 @@ function GUI.UpdateConfigList(ConfigsSide, Settings)
     if GUI.ConfigManager then
         local configs = GUI.ConfigManager.List()
         if type(configs) == "table" then
-            for _, name in ipairs(configs) do    
-                ConfigsSide:CreateLabel(name)
-                ConfigsSide:CreateButton({
-                    Name = "Load",
-                    Icon = "78689563976440",
+            for _, name in pairs(configs) do    
+                local ConfigButton = ConfigsSide:CreateButton({
+                    Name = name,
                     Callback = function()
+                        GUI.ConfigName = name
+                    end
+                })
+
+                
+                if ConfigButton and ConfigButton.Element then
+                    local ButtonFrame = ConfigButton.Element
+                    
+                    local Controls = Instance.new("Frame")
+                    Controls.Name = "Controls"
+                    Controls.Size = UDim2.new(0, 60, 1, -6)
+                    Controls.Position = UDim2.new(1, -65, 0, 3)
+                    Controls.BackgroundTransparency = 1
+                    Controls.Parent = ButtonFrame
+                    
+                    local Layout = Instance.new("UIListLayout")
+                    Layout.FillDirection = Enum.FillDirection.Horizontal
+                    Layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+                    Layout.VerticalAlignment = Enum.VerticalAlignment.Center
+                    Layout.Padding = UDim.new(0, 4)
+                    Layout.Parent = Controls
+
+                    
+                    local function createIconButton(icon, color, callback)
+                        local btn = Instance.new("ImageButton")
+                        btn.Size = UDim2.new(0, 22, 0, 22)
+                        btn.BackgroundTransparency = 1
+                        btn.Image = "rbxassetid://" .. tostring(icon)
+                        btn.ImageColor3 = color
+                        btn.ZIndex = 10
+                        btn.Parent = Controls
+                        btn.MouseButton1Click:Connect(callback)
+                        return btn
+                    end
+
+                    
+                    createIconButton(11311025700, Color3.fromRGB(100, 255, 100), function()
                         GUI.ConfigManager.Load(name, Settings)
                         GUI.UpdateToggles(Settings)
                         GUI.Window:Notify({
@@ -1579,14 +1621,10 @@ function GUI.UpdateConfigList(ConfigsSide, Settings)
                             Duration = 5,
                             Image = 4483362458
                         })
-                    end
-                })
+                    end)
 
-                
-                ConfigsSide:CreateButton({
-                    Name = "Delete",
-                    Icon = "111704740561400",
-                    Callback = function()
+                    
+                    createIconButton(11311025587, Color3.fromRGB(255, 100, 100), function()
                         GUI.ConfigManager.Delete(name)
                         GUI.UpdateConfigList(ConfigsSide, Settings)
                         GUI.Window:Notify({
@@ -1595,10 +1633,8 @@ function GUI.UpdateConfigList(ConfigsSide, Settings)
                             Duration = 5,
                             Image = 4483362458
                         })
-                    end
-                })
-                
-                ConfigsSide:CreateDivider()
+                    end)
+                end
             end
         end
     end

@@ -2224,7 +2224,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 					TweenService:Create(Button, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
 				end)
 
-				TargetTab.Element = Button
+				ButtonValue.Element = Button
 
 				function ButtonValue:Set(NewButton)
 				Button.Title.Text = NewButton
@@ -3610,15 +3610,16 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 			
 			local Left = CreateSubPage("Left", ratio)
 			
+			local Right = CreateSubPage("Right", 1 - ratio)
+			
 			local Separator = Instance.new("Frame")
 			Separator.Name = "VerticalSeparator"
 			Separator.Size = UDim2.new(0, 1, 1, -10)
+			Separator.Position = UDim2.new(ratio, 0, 0, 5) -- Ставим точно между Left и Right
 			Separator.BackgroundColor3 = SelectedTheme.TextColor
 			Separator.BackgroundTransparency = 0.8
 			Separator.BorderSizePixel = 0
 			Separator.Parent = Container
-			
-			local Right = CreateSubPage("Right", 1 - ratio)
 			
 			WithoniumRTY.Main:GetPropertyChangedSignal('BackgroundColor3'):Connect(function()
 				Separator.BackgroundColor3 = SelectedTheme.TextColor
