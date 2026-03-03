@@ -745,19 +745,45 @@ local LocalPlayer = Players.LocalPlayer
 
 
 local function loadWithTimeout(url: string, timeout: number?): ...any
+	if type(url) ~= "string" then return false, "URL must be a string" end
+	url = url:gsub("^%s*(.-)%s*$", "%1")
+	if not url:find("^http") then return false, "Invalid protocol" end
+
 	timeout = timeout or 5
 	local requestCompleted = false
 	local success, result = false, nil
 
 	local requestThread = task.spawn(function()
-		local fetchSuccess, fetchResult = pcall(game.HttpGet, game, url)
-		if not fetchSuccess or #fetchResult == 0 then
+		local fetchSuccess, fetchResult
+		local requestFunc = (syn and syn.request) or (fluxus and fluxus.request) or (http and http.request) or http_request or request
+		if requestFunc then
+			fetchSuccess, fetchResult = pcall(function()
+				local res = requestFunc({
+					Url = url,
+					Method = "GET"
+				})
+				if res and res.Success then
+					return res.Body
+				end
+				error(res and res.StatusCode or "Unknown error")
+			end)
+		else
+			
+			fetchSuccess, fetchResult = pcall(function()
+				return game:HttpGet(url)
+			end)
+		end
+
+		if not fetchSuccess or not fetchResult or #fetchResult == 0 then
 			success, result = false, fetchResult or "Empty response"
 			requestCompleted = true
 			return
 		end
+
 		local execSuccess, execResult = pcall(function()
-			return loadstring(fetchResult)()
+			local f, err = loadstring(fetchResult)
+			if f then return f() end
+			error(err)
 		end)
 		success, result = execSuccess, execResult
 		requestCompleted = true
@@ -766,6 +792,7 @@ local function loadWithTimeout(url: string, timeout: number?): ...any
 	task.delay(timeout, function()
 		if not requestCompleted then
 			task.cancel(requestThread)
+			success, result = false, "Request timed out"
 			requestCompleted = true
 		end
 	end)

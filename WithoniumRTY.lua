@@ -8,24 +8,50 @@ local function getService(name)
 	return if cloneref then cloneref(service) else service
 end
 local function loadWithTimeout(url: string, timeout: number?): ...any
-	assert(type(url) == "string", "Expected string, got " .. type(url))
+	if type(url) ~= "string" then return nil end
+	url = url:gsub("^%s*(.-)%s*$", "%1")
+	if not url:find("^http") then
+		warn("WithoniumRTY | Invalid URL protocol: " .. url)
+		return nil
+	end
+
 	timeout = timeout or 5
 	local requestCompleted = false
 	local success, result = false, nil
 
 	local requestThread = task.spawn(function()
-		local fetchSuccess, fetchResult = pcall(game.HttpGet, game, url)
-		if not fetchSuccess or #fetchResult == 0 then
-			if #fetchResult == 0 then
-				fetchResult = "Empty response"
-			end
-			success, result = false, fetchResult
+		local fetchSuccess, fetchResult
+		
+		-- Use executor's request if available (more reliable)
+		local requestFunc = (syn and syn.request) or (fluxus and fluxus.request) or (http and http.request) or http_request or request
+		if requestFunc then
+			fetchSuccess, fetchResult = pcall(function()
+				local res = requestFunc({
+					Url = url,
+					Method = "GET"
+				})
+				if res and res.Success then
+					return res.Body
+				end
+				error(res and res.StatusCode or "Unknown error")
+			end)
+		else
+			-- Fallback to HttpGet
+			fetchSuccess, fetchResult = pcall(function()
+				return game:HttpGet(url)
+			end)
+		end
+
+		if not fetchSuccess or not fetchResult or #fetchResult == 0 then
+			success, result = false, fetchResult or "Empty response"
 			requestCompleted = true
 			return
 		end
-		local content = fetchResult
+
 		local execSuccess, execResult = pcall(function()
-			return loadstring(content)()
+			local f, err = loadstring(fetchResult)
+			if f then return f() end
+			error(err)
 		end)
 		success, result = execSuccess, execResult
 		requestCompleted = true
@@ -33,21 +59,21 @@ local function loadWithTimeout(url: string, timeout: number?): ...any
 
 	local timeoutThread = task.delay(timeout, function()
 		if not requestCompleted then
-			warn("Request for " .. url .. " timed out after " .. tostring(timeout) .. " seconds")
+			warn("WithoniumRTY | Request for " .. url .. " timed out after " .. tostring(timeout) .. " seconds")
 			task.cancel(requestThread)
 			result = "Request timed out"
 			requestCompleted = true
 		end
 	end)
+
 	while not requestCompleted do
 		task.wait()
 	end
+
 	if coroutine.status(timeoutThread) ~= "dead" then
 		task.cancel(timeoutThread)
 	end
-	if not success then
-		warn("Failed to process " .. tostring(url) .. ": " .. tostring(result))
-	end
+
 	return if success then result else nil
 end
 
