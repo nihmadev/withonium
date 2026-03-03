@@ -771,12 +771,23 @@ local function getIcon(name : string): {id: number, imageRectSize: Vector2, imag
 end
 local function getAssetUri(id: any): string
 	local assetUri = "rbxassetid://0"
-	if type(id) == "number" or (type(id) == "string" and tonumber(id)) then
-		assetUri = "rbxassetid://" .. id
-	elseif type(id) == "string" and not Icons then
-		warn("WithoniumRTY | Cannot use Lucide icons as icons library is not loaded")
-	else
-		warn("WithoniumRTY | The icon argument must either be an icon ID (number) or a Lucide icon name (string)")
+	if not id then return assetUri end
+
+	if type(id) == "number" then
+		assetUri = "rbxassetid://" .. tostring(id)
+	elseif type(id) == "string" then
+		if tonumber(id) then
+			assetUri = "rbxassetid://" .. id
+		elseif not id:find("rbxassetid://") and Icons then
+			local success, asset = pcall(getIcon, id)
+			if success and asset then
+				-- We can't easily return a single URI for Lucide icons because they need ImageRectOffset/Size
+				-- But for now let's just return a placeholder or handle it in the caller
+				return assetUri
+			end
+		elseif id:find("rbxassetid://") then
+			assetUri = id
+		end
 	end
 	return assetUri
 end
@@ -1966,10 +1977,10 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 		end)
 
 		local Tab = {}
-		local function ApplyTabMethods(Tab, TabPage)
+		local function ApplyTabMethods(TargetTab, TabPage)
 		local SDone = false
 
-		function Tab:Clear()
+		function TargetTab:Clear()
 			for _, child in ipairs(TabPage:GetChildren()) do
 				if child.ClassName == "Frame" and child.Name ~= "Placeholder" then
 					child:Destroy()
@@ -1979,7 +1990,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 			end
 			SDone = false
 		end
-		function Tab:CreateButton(ButtonSettings)
+		function TargetTab:CreateButton(ButtonSettings)
 			local ButtonValue = {}
 
 			local Button = Elements.Template.Button:Clone()
@@ -2318,7 +2329,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return ColorPickerSettings
 		end
-		function Tab:CreateSection(SectionName)
+		function TargetTab:CreateSection(SectionName)
 			local SectionValue = {}
 			if SDone then
 				local Divider = Elements.Template.Divider:Clone()
@@ -2357,7 +2368,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return SectionValue
 		end
-		function Tab:CreateDivider()
+		function TargetTab:CreateDivider()
 			local DividerValue = {}
 
 			local Divider = Elements.Template.Divider:Clone()
@@ -2380,7 +2391,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 			return DividerValue
 		end
 
-		function Tab:CreateLabel(LabelText : string, Icon: number, Color : Color3, IgnoreTheme : boolean)
+		function TargetTab:CreateLabel(LabelText : string, Icon: number, Color : Color3, IgnoreTheme : boolean)
 			local LabelValue = {}
 
 			local Label = Elements.Template.Label:Clone()
@@ -2473,7 +2484,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return LabelValue
 		end
-		function Tab:CreateParagraph(ParagraphSettings)
+		function TargetTab:CreateParagraph(ParagraphSettings)
 			local ParagraphValue = {}
 
 			local Paragraph = Elements.Template.Paragraph:Clone()
@@ -2507,7 +2518,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return ParagraphValue
 		end
-		function Tab:CreateInput(InputSettings)
+		function TargetTab:CreateInput(InputSettings)
 			local Input = Elements.Template.Input:Clone()
 			Input.Name = InputSettings.Name
 			Input.Title.Text = InputSettings.Name
@@ -2594,7 +2605,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return InputSettings
 		end
-		function Tab:CreateDropdown(DropdownSettings)
+		function TargetTab:CreateDropdown(DropdownSettings)
 			local Dropdown = Elements.Template.Dropdown:Clone()
 			if string.find(DropdownSettings.Name,"closed") then
 				Dropdown.Name = "Dropdown"
@@ -2908,7 +2919,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return DropdownSettings
 		end
-		function Tab:CreateKeybind(KeybindSettings)
+		function TargetTab:CreateKeybind(KeybindSettings)
 			local CheckingForKey = false
 			local Keybind = Elements.Template.Keybind:Clone()
 			Keybind.Name = KeybindSettings.Name
@@ -3045,7 +3056,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return KeybindSettings
 		end
-		function Tab:CreateToggle(ToggleSettings)
+		function TargetTab:CreateToggle(ToggleSettings)
 			local ToggleValue = {}
 
 			local Toggle = Elements.Template.Toggle:Clone()
@@ -3214,7 +3225,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return ToggleSettings
 		end
-		function Tab:CreateSlider(SliderSettings)
+		function TargetTab:CreateSlider(SliderSettings)
 			local SLDragging = false
 			local Slider = Elements.Template.Slider:Clone()
 			Slider.Name = SliderSettings.Name
@@ -3743,4 +3754,3 @@ task.delay(4, function()
 end)
 
 return WithoniumRTYLibrary
-

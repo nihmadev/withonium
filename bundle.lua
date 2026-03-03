@@ -17,10 +17,10 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
 
--- Sub-modules
--- We assume these are in the 'Aimbot' folder relative to this script
--- In a real Roblox environment, this would be require(script.Aimbot.Prediction)
--- but for this file-based structure, we'll use paths that make sense for the loader.
+
+
+
+
 local Prediction = require("modules/Aimbot/Prediction")
 local Targeting = require("modules/Aimbot/Targeting")
 local Input = require("modules/Aimbot/Input")
@@ -38,19 +38,19 @@ local Aimbot = {
     ToggleActive = false,
     LastKeyState = false,
     
-    -- FreeCam State
+    
     FreeCamActive = false,
     FreeCamPos = Vector3.new(0, 0, 0),
     FreeCamRot = Vector2.new(0, 0),
     OriginalCameraType = nil,
     OriginalCameraCFrame = nil,
     
-    -- Smooth Prediction Properties
+    
     LastPredictedDir = nil,
-    PredictionSmoothing = 0.2, -- Чем меньше, тем плавнее (0.1 - 0.5)
+    PredictionSmoothing = 0.2, 
 }
 
--- Initialize FOV Circle
+
 Aimbot.FOVCircle = Drawing.new("Circle")
 Aimbot.FOVCircle.Color = Color3.new(1, 1, 1)
 Aimbot.FOVCircle.Thickness = 1
@@ -59,7 +59,7 @@ Aimbot.FOVCircle.Filled = false
 Aimbot.FOVCircle.Transparency = 0.5
 Aimbot.FOVCircle.Visible = false
 
--- Interface methods delegating to sub-modules
+
 function Aimbot.GetProjectilePrediction(target, Settings, Ballistics, customOrigin)
     return Prediction.GetProjectilePrediction(target, Settings, Ballistics, customOrigin)
 end
@@ -129,10 +129,10 @@ function Aimbot.Update(deltaTime, Settings, Utils, Ballistics, ESP)
     
     Aimbot.UpdateHitboxes(Settings, Utils, ESP)
     
-    -- Cache target for current frame to avoid multiple expensive searches
+    
     local currentFrameTarget = Aimbot.FindTarget(Settings, Utils)
     
-    -- Обновляем цель для Silent Aim один раз за кадр, чтобы не лагало в хуках
+    
     if Settings.silentAimEnabled then
         Aimbot.SilentTarget = currentFrameTarget
     else
@@ -172,24 +172,24 @@ function Aimbot.Update(deltaTime, Settings, Utils, Ballistics, ESP)
             Aimbot.CurrentTarget = target
             Aimbot.IsAiming = true
             
-            -- Keep Camera as Custom to allow standard movement scripts to work.
-            -- We override its CFrame in RenderStep (Main.lua) with priority +1.
+            
+            
             
             local predictedDir = Aimbot.GetProjectilePrediction(target, Settings, Ballistics)
             Aimbot.TargetPosition = camera.CFrame.Position + (predictedDir * 10)
             
             local currentCFrame = camera.CFrame
-            -- Safety check for lookAt to prevent "spinning" when looking straight up/down
+            
             local upVector = Vector3.new(0, 1, 0)
             if math.abs(predictedDir:Dot(upVector)) > 0.99 then
-                upVector = Vector3.new(0, 0, 1) -- Use forward as up if looking vertically
+                upVector = Vector3.new(0, 0, 1) 
             end
             
             local targetCFrame = CFrame.lookAt(currentCFrame.Position, currentCFrame.Position + predictedDir, upVector)
             
-            -- Improved Smoothness: use an exponential factor for better feel
+            
             local smoothnessFactor = Settings.smoothness or 0.5
-            -- Limit deltaTime to prevent huge jumps after lag spikes
+            
             local safeDeltaTime = math.min(deltaTime, 0.1)
             local alpha = math.clamp(safeDeltaTime * (smoothnessFactor * 250), 0, 1)
             
@@ -199,18 +199,18 @@ function Aimbot.Update(deltaTime, Settings, Utils, Ballistics, ESP)
                 camera.CFrame = targetCFrame
             end
         else
-            -- Reset state when target is lost
+            
             Aimbot.CurrentTarget = nil
             Aimbot.IsAiming = false
             Aimbot.TargetPosition = nil
-            Aimbot.LastPredictedDir = nil -- Reset smoothing when no target
+            Aimbot.LastPredictedDir = nil 
         end
     else
-        -- Reset state when aiming stops
+        
         Aimbot.CurrentTarget = nil
         Aimbot.IsAiming = false
         Aimbot.TargetPosition = nil
-        Aimbot.LastPredictedDir = nil -- Reset smoothing when not aiming
+        Aimbot.LastPredictedDir = nil 
     end
 
     Aimbot.ApplyNoRecoil(Settings)
@@ -223,11 +223,11 @@ function Aimbot.Update(deltaTime, Settings, Utils, Ballistics, ESP)
     Aimbot.ApplyGodMode(Settings)
     Aimbot.ApplyAntiAFK(Settings)
     
-    -- Anti-Aim should be applied early or late depending on preference, 
-    -- but here we ensure it doesn't break the aimbot by running it after calculations.
+    
+    
     Aimbot.ApplyAntiAim(Settings)
 
-    -- Update FOV Circle
+    
     if Aimbot.FOVCircle then
         Aimbot.FOVCircle.Visible = Settings.fovCircleEnabled
         Aimbot.FOVCircle.Radius = Settings.fovSize or 90
@@ -244,7 +244,7 @@ function Aimbot.Remove()
         UserInputService.MouseBehavior = Enum.MouseBehavior.Default
         Aimbot.FreeCamActive = false
         
-        -- Restore collision if needed
+        
         local character = LocalPlayer.Character
         if character and Exploits.OriginalCollision then
             for part, originalValue in pairs(Exploits.OriginalCollision) do
@@ -261,7 +261,7 @@ function Aimbot.Remove()
         Aimbot.FOVCircle = nil
     end
     
-    -- Restore hitboxes
+    
     if Hitboxes.OriginalProperties then
         for part, props in pairs(Hitboxes.OriginalProperties) do
             if part and part.Parent then
@@ -275,7 +275,7 @@ function Aimbot.Remove()
         Hitboxes.OriginalProperties = {}
     end
     
-    -- Restore Anti-Aim state
+    
     local character = LocalPlayer.Character
     local humanoid = character and character:FindFirstChildOfClass("Humanoid")
     if humanoid then humanoid.AutoRotate = true end
@@ -296,7 +296,7 @@ end
 _modules["modules/Ballistics"] = function()
 local Ballistics = {}
 
--- Comprehensive list of attributes/values to check for weapon stats
+
 local VELOCITY_NAMES = {"MuzzleVelocity", "Velocity", "Speed", "ProjectileSpeed", "BulletSpeed", "ShootVelocity", "ProjectileVelocity"}
 local GRAVITY_NAMES = {"Gravity", "BulletGravity", "Drop", "ProjectileGravity", "BulletDrop", "ProjectileDrop", "Acceleration"}
 
@@ -308,7 +308,7 @@ function Ballistics.GetWeaponFromTool(tool)
         gravity = nil
     }
     
-    -- 1. Try to find attributes (Modern way)
+    
     for _, name in ipairs(VELOCITY_NAMES) do
         local val = tool:GetAttribute(name)
         if val and type(val) == "number" and val > 0 then
@@ -325,7 +325,7 @@ function Ballistics.GetWeaponFromTool(tool)
         end
     end
     
-    -- 2. Try to find values inside the tool
+    
     if not stats.velocity or not stats.gravity then
         for _, v in ipairs(tool:GetChildren()) do
             if v:IsA("ValueBase") then
@@ -350,7 +350,7 @@ function Ballistics.GetWeaponFromTool(tool)
         end
     end
     
-    -- 3. Try to find in a 'Settings' or 'Config' module/folder
+    
     if not stats.velocity or not stats.gravity then
         local config = tool:FindFirstChild("Settings") or tool:FindFirstChild("Config") or tool:FindFirstChild("Configuration") or tool:FindFirstChild("GunSettings")
         if config then
@@ -400,7 +400,7 @@ function Ballistics.GetWeaponFromTool(tool)
         end
     end
 
-    -- 4. Check for FastCast specific structure
+    
     if not stats.velocity or not stats.gravity then
         local fastCastData = tool:FindFirstChild("FastCastSettings")
         if fastCastData and fastCastData:IsA("ModuleScript") then
@@ -412,7 +412,7 @@ function Ballistics.GetWeaponFromTool(tool)
         end
     end
 
-    -- 5. Deep search for any ValueBase that might be velocity/gravity (Throttled)
+    
     if not stats.velocity or not stats.gravity then
         for _, v in ipairs(tool:GetDescendants()) do
             if v:IsA("ValueBase") then
@@ -431,13 +431,13 @@ function Ballistics.GetWeaponFromTool(tool)
         end
     end
 
-    -- Final sanity checks
+    
     if stats.velocity and type(stats.velocity) == "number" then
         if stats.velocity <= 0 then stats.velocity = nil end
     end
     
     if stats.gravity and type(stats.gravity) == "number" then
-        -- Gravity can be negative in some engines, but we want the magnitude for prediction
+        
         stats.gravity = math.abs(stats.gravity)
     end
 
@@ -448,7 +448,7 @@ function Ballistics.GetConfig()
     local player = game:GetService("Players").LocalPlayer
     local tool = player and player.Character and player.Character:FindFirstChildWhichIsA("Tool")
     
-    -- Priority 1: Dynamic detection from the current tool
+    
     if tool then
         local dynamicStats = Ballistics.GetWeaponFromTool(tool)
         if dynamicStats then
@@ -459,7 +459,7 @@ function Ballistics.GetConfig()
         end
     end
     
-    -- Priority 2: Generic defaults based on tool name
+    
     if tool then
         local name = tool.Name:lower()
         if name:find("bow") then
@@ -471,7 +471,7 @@ function Ballistics.GetConfig()
         end
     end
     
-    -- Priority 3: Global Default
+    
     return { velocity = 1000, gravity = 196.2 }
 end
 
@@ -561,7 +561,7 @@ function ConfigManager.List()
         local files = listfiles(ConfigManager.Folder)
         local configs = {}
         for _, file in ipairs(files) do
-            -- Extract filename without path and extension
+            
             local name = file:match("([^/\\]+)%.json$")
             if name then
                 table.insert(configs, name)
@@ -588,7 +588,7 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
 
--- Sub-modules
+
 local State = require("modules/ESP/State")
 local Skeleton = require("modules/ESP/Skeleton")
 local Chams = require("modules/ESP/Chams")
@@ -602,8 +602,8 @@ local ESP = {
     Skeletons = State.Skeletons,
     Healthbars = State.Healthbars,
     Container = State.Container,
-    PlayersWithDist = {}, -- Reuse this table to reduce garbage collection
-    PlayerDataPool = {}, -- Pool for player data tables
+    PlayersWithDist = {}, 
+    PlayerDataPool = {}, 
     LastUpdate = 0
 }
 
@@ -623,20 +623,20 @@ end
 
 function ESP.Update(Settings, deltaTime, Utils)
     local now = tick()
-    if now - ESP.LastUpdate < 0.033 then return end -- Max ~30 FPS for ESP updates (enough for smoothness)
+    if now - ESP.LastUpdate < 0.033 then return end 
     ESP.LastUpdate = now
 
     local Camera = workspace.CurrentCamera
     if not Camera then return end
     
     local activeHighlights = 0
-    local maxHighlights = 15 -- Reduce limit for better performance
+    local maxHighlights = 15 
     
-    -- Clear the list but keep the pool of tables
+    
     local playersWithDist = ESP.PlayersWithDist
     local pool = ESP.PlayerDataPool
     
-    -- Move all current tables back to pool and clear references
+    
     for i = 1, #playersWithDist do
         local data = playersWithDist[i]
         data.Player = nil
@@ -648,7 +648,7 @@ function ESP.Update(Settings, deltaTime, Utils)
     
     local allPlayers = Players:GetPlayers()
     
-    -- Cleanup ESP.Data for players who are no longer in the game
+    
     for player, _ in pairs(State.Data) do
         if not Players:GetPlayerByUserId(player.UserId) then
             ESP.Remove(player)
@@ -666,7 +666,7 @@ function ESP.Update(Settings, deltaTime, Utils)
             dist = (Camera.CFrame.Position - rootPart.Position).Magnitude
         end
         
-        -- Get table from pool or create new if pool is empty
+        
         local data = table.remove(pool) or {}
         data.Player = player
         data.Distance = dist
@@ -704,7 +704,7 @@ function ESP.Update(Settings, deltaTime, Utils)
             continue
         end
 
-        -- Reset visuals if character changed (respawn)
+        
         if State.Data[player] and State.Data[player].LastCharacter ~= character then
             ESP.Remove(player)
         end
@@ -714,22 +714,22 @@ function ESP.Update(Settings, deltaTime, Utils)
         
         local humanoid = character:FindFirstChild("Humanoid")
         
-        -- Highlights (Chams)
+        
         if Chams.Update(player, character, humanoid, Settings, activeHighlights, maxHighlights) then
             activeHighlights = activeHighlights + 1
         end
 
-        -- Skeleton
+        
         if Settings.espEnabled and Settings.espSkeleton and character and humanoid and humanoid.Health > 0 and character.Parent then
             Skeleton.Draw(player, character, Settings)
         else
             Skeleton.Cleanup(player)
         end
 
-        -- Labels
+        
         Labels.Update(player, character, rootPart, humanoid, Settings, distance, isWithinDistance)
 
-        -- Healthbar
+        
         Healthbars.Update(player, character, rootPart, humanoid, Settings, isWithinDistance)
     end
 end
@@ -743,7 +743,7 @@ local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- Функция загрузки библиотеки с таймаутом
+
 local function loadWithTimeout(url: string, timeout: number?): ...any
 	timeout = timeout or 5
 	local requestCompleted = false
@@ -784,7 +784,7 @@ local GUI = {
     ConfigName = "shlepa228",
     CurrentTab = "Aimbot",
     
-    -- Watermark and Keybinds
+    
     Watermark = {
         Frame = nil,
         Text = nil,
@@ -798,16 +798,16 @@ local GUI = {
     FrameCount = 0,
     LastWatermarkUpdate = 0,
 
-    -- UI Elements for synchronization
+    
     Elements = {
         Toggles = {}
     },
 
-    -- Mock ScreenGui for Main.Unload compatibility
+    
     ScreenGui = nil
 }
 
--- Helper function to safely get name from KeyCode or UserInputType
+
 local function getKeyName(key)
     if not key then return "None" end
     local str = tostring(key)
@@ -816,18 +816,18 @@ local function getKeyName(key)
     return str
 end
 
--- Helper function to safely set keybind from WithoniumRTY callback
+
 local function setKeybind(Key, Settings, SettingName)
     if not Key then return end
     
-    -- First try KeyCode
+    
     local success, result = pcall(function() return Enum.KeyCode[Key] end)
     if success and result then
         Settings[SettingName] = result
         return
     end
     
-    -- Then try UserInputType (for MouseButtons)
+    
     success, result = pcall(function() return Enum.UserInputType[Key] end)
     if success and result then
         Settings[SettingName] = result
@@ -838,7 +838,7 @@ function GUI.Init(Settings, Utils, UnloadCallback, ConfigManager)
     GUI.ConfigManager = ConfigManager
     GUI.UnloadCallback = UnloadCallback
     
-    -- Create ScreenGui for Watermark/Keybinds
+    
     local gui_parent = nil
     pcall(function()
         if gethui then gui_parent = gethui()
@@ -854,7 +854,7 @@ function GUI.Init(Settings, Utils, UnloadCallback, ConfigManager)
         GUI.ScreenGui.Parent = gui_parent
         GUI.ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-        -- Watermark
+        
         GUI.Watermark.Frame = Instance.new("Frame")
         GUI.Watermark.Frame.Name = "Watermark"
         GUI.Watermark.Frame.Parent = GUI.ScreenGui
@@ -901,7 +901,7 @@ function GUI.Init(Settings, Utils, UnloadCallback, ConfigManager)
         GUI.Watermark.Text.Text = "Withonium | Initializing..."
         GUI.Watermark.Text.Parent = GUI.Watermark.Frame
 
-        -- Keybind List
+        
         GUI.KeybindList.Frame = Instance.new("Frame")
         GUI.KeybindList.Frame.Name = "KeybindList"
         GUI.KeybindList.Frame.Parent = GUI.ScreenGui
@@ -972,7 +972,7 @@ function GUI.Init(Settings, Utils, UnloadCallback, ConfigManager)
         KeySystem = false
     })
 
-    -- HIDE RAYFIELD SETTINGS BUTTON (EXTREMELY ROBUST)
+    
     task.spawn(function()
         while true do
             pcall(function()
@@ -983,10 +983,10 @@ function GUI.Init(Settings, Utils, UnloadCallback, ConfigManager)
                         local topbar = main:FindFirstChild("Topbar")
                         if topbar then
                             for _, v in ipairs(topbar:GetChildren()) do
-                                -- Hide everything except the title and the close/minimize buttons (which are usually at the far right)
+                                
                                 if v:IsA("ImageButton") or v:IsA("Button") then
                                     local name = v.Name:lower()
-                                    -- Rayfield close/min are usually named "Close" and "Minimize" or similar
+                                    
                                     if name:find("settings") or name:find("bind") or name:find("help") then
                                         v.Visible = false
                                         v.Transparency = 1
@@ -1002,7 +1002,7 @@ function GUI.Init(Settings, Utils, UnloadCallback, ConfigManager)
         end
     end)
 
-    -- Aimbot Tab (rbxassetid://9134785384)
+    
     local AimbotTab = GUI.Window:CreateTab("Aimbot", 9134785384)
     
     AimbotTab:CreateSection("Silent Aim")
@@ -1192,7 +1192,7 @@ function GUI.Init(Settings, Utils, UnloadCallback, ConfigManager)
         Callback = function(Option) Settings.targetPart = Option[1] end
     })
 
-    -- Visuals Tab (rbxassetid://9134780101)
+    
     local VisualsTab = GUI.Window:CreateTab("Visuals", 9134780101)
     
     VisualsTab:CreateSection("ESP")
@@ -1322,7 +1322,7 @@ function GUI.Init(Settings, Utils, UnloadCallback, ConfigManager)
         Callback = function(Key) setKeybind(Key, Settings, "FullBrightKey") end
     })
 
-    -- Player Tab (rbxassetid://10747373176)
+    
     local PlayerTab = GUI.Window:CreateTab("Player", 10747373176)
     
     PlayerTab:CreateSection("Helpers")
@@ -1451,8 +1451,6 @@ function GUI.Init(Settings, Utils, UnloadCallback, ConfigManager)
         Flag = "antiAfkInterval",
         Callback = function(Value) Settings.antiAfkInterval = Value end
     })
-
-    -- Settings Tab (rbxassetid://7072721682)
     local SettingsTab = GUI.Window:CreateTab("Settings", 7072721682)
     local MainSettings, ConfigsSide = SettingsTab:Split(0.75)
     
@@ -1465,28 +1463,12 @@ function GUI.Init(Settings, Utils, UnloadCallback, ConfigManager)
     })
     
     local function UpdateConfigList()
-        -- Use the library's section/buttons for the side panel too
-        -- Note: We need a way to "refresh" or "clear" a sub-tab, 
-        -- but for now let's just use CreateButton for each config.
-        
-        -- To clear, we can reach into the TabPage of the sub-tab if we exposed it, 
-        -- but it's easier to just use the library's native methods as much as possible.
-        
-        -- Let's add a helper in GUI to refresh the configs panel
     end
-
-    -- Actually, for the dynamic config list, we might still need some custom logic 
-    -- if the library doesn't support clearing sections.
-    -- But the user wants it to "depend on the lib".
-    
-    -- I'll implement a custom "ConfigList" section in the right sub-tab.
-
     MainSettings:CreateButton({
          Name = "Save Current as New Config",
          Callback = function()
              if GUI.ConfigManager then
                  GUI.ConfigManager.Save(GUI.ConfigName, Settings)
-                 -- Update list logic
                  GUI.UpdateConfigList(ConfigsSide, Settings)
                  GUI.Window:Notify({
                      Title = "Config Saved",
@@ -1532,8 +1514,6 @@ function GUI.Init(Settings, Utils, UnloadCallback, ConfigManager)
 end
 
 function GUI.UpdateConfigList(ConfigsSide, Settings)
-    -- This is tricky because the library doesn't have a "Clear" method for tabs.
-    -- I will add a "Clear" method to the library's Tab/SubTab object.
     if ConfigsSide.Clear then
         ConfigsSide:Clear()
     end
@@ -1542,51 +1522,42 @@ function GUI.UpdateConfigList(ConfigsSide, Settings)
     
     if GUI.ConfigManager then
         local configs = GUI.ConfigManager.List()
-        for _, name in ipairs(configs) do
-            -- Create a "Row" using library buttons? 
-            -- The user wants 1/4 split with Delete and Load buttons using icons.
-            
-            -- I'll use a Paragraph or just a Section for the name, 
-            -- and then two buttons below or beside it.
-            
-            -- Since the library doesn't have rows, I'll just use two buttons with icons.
-            -- One for Load, one for Delete.
-            
-            ConfigsSide:CreateLabel(name)
-            
-            -- Load Button (78689563976440)
-            ConfigsSide:CreateButton({
-                Name = "Load",
-                Icon = "78689563976440",
-                Callback = function()
-                    GUI.ConfigManager.Load(name, Settings)
-                    GUI.UpdateToggles(Settings)
-                    GUI.Window:Notify({
-                        Title = "Config Loaded",
-                        Content = "Configuration " .. name .. " has been loaded.",
-                        Duration = 5,
-                        Image = 4483362458
-                    })
-                end
-            })
+        if type(configs) == "table" then
+            for _, name in ipairs(configs) do    
+                ConfigsSide:CreateLabel(name)
+                ConfigsSide:CreateButton({
+                    Name = "Load",
+                    Icon = "78689563976440",
+                    Callback = function()
+                        GUI.ConfigManager.Load(name, Settings)
+                        GUI.UpdateToggles(Settings)
+                        GUI.Window:Notify({
+                            Title = "Config Loaded",
+                            Content = "Configuration " .. name .. " has been successfully loaded.",
+                            Duration = 5,
+                            Image = 4483362458
+                        })
+                    end
+                })
 
-            -- Delete Button (111704740561400)
-            ConfigsSide:CreateButton({
-                Name = "Delete",
-                Icon = "111704740561400",
-                Callback = function()
-                    GUI.ConfigManager.Delete(name)
-                    GUI.UpdateConfigList(ConfigsSide, Settings)
-                    GUI.Window:Notify({
-                        Title = "Config Deleted",
-                        Content = "Configuration " .. name .. " has been deleted.",
-                        Duration = 5,
-                        Image = 4483362458
-                    })
-                end
-            })
-            
-            ConfigsSide:CreateDivider()
+                
+                ConfigsSide:CreateButton({
+                    Name = "Delete",
+                    Icon = "111704740561400",
+                    Callback = function()
+                        GUI.ConfigManager.Delete(name)
+                        GUI.UpdateConfigList(ConfigsSide, Settings)
+                        GUI.Window:Notify({
+                            Title = "Config Deleted",
+                            Content = "Configuration " .. name .. " has been deleted.",
+                            Duration = 5,
+                            Image = 4483362458
+                        })
+                    end
+                })
+                
+                ConfigsSide:CreateDivider()
+            end
         end
     end
 end
@@ -1598,14 +1569,11 @@ function GUI.ToggleVisible(Settings)
         end
     end)
 end
-
--- New function to update GUI elements when settings change externally
 function GUI.UpdateToggles(Settings)
     pcall(function()
         for flag, toggle in pairs(GUI.Elements.Toggles) do
             if toggle and toggle.Set then
                 local value = Settings[flag]
-                -- Special case for magicBulletHouseCheck which is inverted in UI
                 if flag == "magicBulletHouseCheck" then
                     value = not value
                 end
@@ -1722,7 +1690,7 @@ end
 
 _modules["modules/Settings"] = function()
 local Settings = {
-    -- Aimbot Settings
+    
     aimbotEnabled = false,
     visibleCheckEnabled = true,
     noRecoilEnabled = false,
@@ -1733,16 +1701,16 @@ local Settings = {
     
     fovCircleEnabled = true,
     smoothness = 0.08,
-    predictionFactor = 1.0, -- Default to 1.0
-    predictionSmoothing = 0.2, -- Smoothing for prediction to avoid jitter
+    predictionFactor = 1.0, 
+    predictionSmoothing = 0.2, 
     projectilePredictionEnabled = true,
     projectileSpeed = 1000,
     projectileGravity = 196.2,
     fovSize = 90,
-    targetPriority = "Distance", -- "Distance", "Crosshair", "Balanced"
+    targetPriority = "Distance", 
     aimKey = Enum.UserInputType.MouseButton1,
-    aimKeyMode = "Hold", -- "Hold", "Toggle", "Always"
-    targetPart = "Head", -- "Head", "Torso", "Legs"
+    aimKeyMode = "Hold", 
+    targetPart = "Head", 
     silentAimKey = Enum.KeyCode.Unknown,
     silentAimKeyMode = "Toggle",
 
@@ -1772,25 +1740,25 @@ local Settings = {
     hitboxExpanderSize = 5,
     hitboxExpanderShow = false,
     
-    -- Anti-Aim Settings
+    
     antiAimEnabled = false,
-    antiAimMode = "Spin", -- "Spin", "Jitter", "Static"
+    antiAimMode = "Spin", 
     antiAimSpeed = 50,
     antiAimKey = Enum.KeyCode.Unknown,
     antiAimKeyMode = "Toggle",
     
-    -- Anti-AFK Settings
+    
     antiAfkEnabled = false,
-    antiAfkInterval = 15, -- Minutes
+    antiAfkInterval = 15, 
     antiAfkLastActionTime = tick(),
     
-    -- Ballistics Settings (Not in GUI as requested)
+    
     ballisticsEnabled = true,
-    bulletVelocity = 1000, -- Studs per second
-    gravity = 196.2, -- Roblox gravity
-    predictionFactor = 0.500, -- For movement prediction
-    predictionIterations = 20, -- Iterations for ballistics accuracy
-    hitscanVelocityThreshold = 800, -- Above this velocity gravity isn't applied to aiming
+    bulletVelocity = 1000, 
+    gravity = 196.2, 
+    predictionFactor = 0.500, 
+    predictionIterations = 20, 
+    hitscanVelocityThreshold = 800, 
     espEnabled = true,
     espHighlights = false,
     espSkeleton = false,
@@ -1808,9 +1776,9 @@ local Settings = {
     espHealthBarBaseDistance = 25,
     espHealthBarMinScale = 0.4,
     espHealthBarMaxScale = 1.0,
-    espMaxDistance = 700, --gamemable
+    espMaxDistance = 700, 
     espTextColor = Color3.fromRGB(255, 255, 255),
-    espChamsMode = "Default", -- "Default", "Glow", "Metal", "Neon"
+    espChamsMode = "Default", 
     espColor = Color3.fromRGB(255, 255, 255),
     espOutlineColor = Color3.fromRGB(255, 255, 255),
     espSkeletonColor = Color3.fromRGB(255, 255, 255),
@@ -1818,7 +1786,7 @@ local Settings = {
     noGrassEnabled = false,
     noFogEnabled = false,
 
-    -- GUI Settings
+    
     guiVisible = true,
     watermarkEnabled = true,
     toggleKey = Enum.KeyCode.RightShift,
@@ -1840,22 +1808,22 @@ local Utils = {
     BodyPartsCache = {}
 }
 
--- Initialize shared params
+
 Utils.SharedRaycastParams.FilterType = Enum.RaycastFilterType.Exclude
 Utils.SharedRaycastParams.IgnoreWater = true
 
 function Utils.getCharacter(player)
     if not player then return nil end
     
-    -- Standard Roblox Character
+    
     if player.Character then return player.Character end
     
-    -- Support for games with custom characters (Trident Survival, etc.)
-    -- PlaceId for Trident Survival
+    
+    
     if game.PlaceId == 13253735473 or game.PlaceId == 8130299583 then
         local renv = getrenv and getrenv()
         if renv and renv._G then
-            -- Check for various character storage locations
+            
             if renv._G.Character and renv._G.Character.character then
                 if player == Players.LocalPlayer then
                     return renv._G.Character.character
@@ -1863,7 +1831,7 @@ function Utils.getCharacter(player)
             end
         end
         
-        -- Fallback: check workspace for a model with player name if standard Character is nil
+        
         local ignorePlayers = workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Players")
         if ignorePlayers then
             local char = ignorePlayers:FindFirstChild(player.Name)
@@ -1885,8 +1853,8 @@ function Utils.getBodyPart(character, partName)
     if partName == "Head" then
         return character:FindFirstChild("Head")
     elseif partName == "Torso" then
-        -- Prefer actual Torso parts for Hitbox Expander stability, as HumanoidRootPart can break physics
-        -- Trident Survival uses "Middle"
+        
+        
         return character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso") or character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Middle")
     elseif partName == "Legs" then
         return character:FindFirstChild("LeftUpperLeg") or character:FindFirstChild("Left Leg") or character:FindFirstChild("RightUpperLeg") or character:FindFirstChild("Right Leg")
@@ -1895,7 +1863,7 @@ function Utils.getBodyPart(character, partName)
 end
 
 function Utils.getAllBodyParts(character, partName)
-    -- Reuse table from cache to avoid allocations
+    
     local parts = Utils.BodyPartsCache
     for k in pairs(parts) do parts[k] = nil end
     
@@ -1932,14 +1900,14 @@ function Utils.isPartVisible(part, character)
     
     if direction.Magnitude < 0.1 then return true end
     
-    -- Reuse shared params and filter table
+    
     local params = Utils.SharedRaycastParams
     local filter = Utils.SharedFilterTable
     
-    -- Clear filter table
+    
     for k in pairs(filter) do filter[k] = nil end
     
-    -- Add target character and local character to filter
+    
     if typeof(character) == "Instance" then
         table.insert(filter, character)
     end
@@ -1953,29 +1921,29 @@ function Utils.isPartVisible(part, character)
         table.insert(filter, LocalPlayer.Character)
     end
     
-    -- Add camera and standard ignore folders
+    
     table.insert(filter, camera)
     local ignore = workspace:FindFirstChild("Ignore")
     if ignore then table.insert(filter, ignore) end
     
     params.FilterDescendantsInstances = filter
     
-    -- Pierce through transparent/non-collidable objects
+    
     local currentOrigin = origin + (direction.Unit * 0.1)
     local currentDirection = (destination - currentOrigin)
     
-    for i = 1, 3 do -- Limit pierces to 3 for performance
+    for i = 1, 3 do 
         local result = workspace:Raycast(currentOrigin, currentDirection, params)
         if not result then return true end
         
         local hit = result.Instance
         local canPierce = false
         
-        -- Check if we should pierce this object
+        
         if hit.Transparency > 0.7 or not hit.CanCollide then
             canPierce = true
         else
-            -- Check for common names that should be ignored
+            
             local name = hit.Name:lower()
             if name:find("grass") or name:find("leaf") or name:find("cloud") or name:find("effect") or name:find("particle") then
                 canPierce = true
@@ -2004,14 +1972,14 @@ function Utils.isHouse(part)
     local parent = part.Parent
     local parentName = parent and parent.Name:lower() or ""
     
-    -- Heuristics for houses/buildings (more specific)
+    
     if name:find("wall") or name:find("roof") or name:find("door") or 
        name:find("house") or name:find("building") or name:find("struct") or 
        parentName:find("house") or parentName:find("building") or parentName:find("struct") then
         return true
     end
     
-    -- Many games put buildings in specific folders
+    
     if parent and (parent:IsA("Folder") or parent:IsA("Model")) then
         if parentName:find("build") or parentName:find("house") or parentName:find("base") then
             return true
@@ -2099,7 +2067,7 @@ local Visuals = {
 }
 
 function Visuals.Init(Settings)
-    -- Safe check for Decoration property
+    
     if Terrain then
         local success, val = pcall(function() return Terrain.Decoration end)
         if success then
@@ -2108,7 +2076,7 @@ function Visuals.Init(Settings)
         end
     end
 
-    -- Store Atmosphere settings
+    
     local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
     if atmosphere then
         Visuals.OriginalAtmosphere = {
@@ -2120,7 +2088,7 @@ function Visuals.Init(Settings)
         }
     end
 
-    -- Store current settings as normal
+    
     Visuals.NormalSettings = {
         Brightness = Lighting.Brightness,
         ClockTime = Lighting.ClockTime,
@@ -2129,7 +2097,7 @@ function Visuals.Init(Settings)
         Ambient = Lighting.Ambient
     }
 
-    -- Watch for changes in Lighting
+    
     local function setupWatcher(property, targetValue)
         local connection = Lighting:GetPropertyChangedSignal(property):Connect(function()
             if Visuals.Enabled then
@@ -2141,7 +2109,7 @@ function Visuals.Init(Settings)
                     Lighting[property] = 1000000
                 end
             else
-                -- If disabled, update NormalSettings so we know what to restore to
+                
                 Visuals.NormalSettings[property] = Lighting[property]
             end
         end)
@@ -2155,10 +2123,10 @@ function Visuals.Init(Settings)
     setupWatcher("GlobalShadows", Visuals.FullBrightSettings.GlobalShadows)
     setupWatcher("Ambient", Visuals.FullBrightSettings.Ambient)
 
-    -- Watch Atmosphere
+    
     task.spawn(function()
         while task.wait(1) do
-            if not Visuals.Connections or #Visuals.Connections == 0 then break end -- Correct cleanup check
+            if not Visuals.Connections or #Visuals.Connections == 0 then break end 
             local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
             if atmosphere and Visuals.NoFogEnabled then
                 if atmosphere.Density ~= 0 then atmosphere.Density = 0 end
@@ -2167,7 +2135,7 @@ function Visuals.Init(Settings)
         end
     end)
 
-    -- Watch Terrain for No Grass
+    
     if Terrain and Visuals.HasDecorationProperty then
         local connection = Terrain:GetPropertyChangedSignal("Decoration"):Connect(function()
             if Visuals.NoGrassEnabled then
@@ -2183,12 +2151,12 @@ function Visuals.Init(Settings)
 end
 
 function Visuals.Update(Settings)
-    -- FullBright logic
+    
     if Settings.fullBrightEnabled ~= Visuals.Enabled then
         Visuals.Enabled = Settings.fullBrightEnabled
         
         if Visuals.Enabled then
-            -- Apply FullBright
+            
             Lighting.Brightness = Visuals.FullBrightSettings.Brightness
             Lighting.ClockTime = Visuals.FullBrightSettings.ClockTime
             Lighting.FogEnd = Visuals.FullBrightSettings.FogEnd
@@ -2196,7 +2164,7 @@ function Visuals.Update(Settings)
             Lighting.GlobalShadows = Visuals.FullBrightSettings.GlobalShadows
             Lighting.Ambient = Visuals.FullBrightSettings.Ambient
         else
-            -- Restore Normal (or apply No Fog if active)
+            
             Lighting.Brightness = Visuals.NormalSettings.Brightness
             Lighting.ClockTime = Visuals.NormalSettings.ClockTime
             Lighting.GlobalShadows = Visuals.NormalSettings.GlobalShadows
@@ -2211,7 +2179,7 @@ function Visuals.Update(Settings)
         end
     end
 
-    -- No Fog logic (handles Atmosphere and Fog properties)
+    
     if Settings.noFogEnabled ~= Visuals.NoFogEnabled then
         Visuals.NoFogEnabled = Settings.noFogEnabled
         
@@ -2235,7 +2203,7 @@ function Visuals.Update(Settings)
         end
     end
 
-    -- No Grass logic (Terrain decoration and potentially models)
+    
     if Settings.noGrassEnabled ~= Visuals.NoGrassEnabled then
         Visuals.NoGrassEnabled = Settings.noGrassEnabled
         
@@ -2243,13 +2211,13 @@ function Visuals.Update(Settings)
             Terrain.Decoration = not Visuals.NoGrassEnabled
         end
         
-        -- Optimized: Only search once when toggled
+        
         task.spawn(function()
             pcall(function()
                 local grassNames = {"Grass", "TallGrass", "Shrub", "Bush"}
                 local targetTransparency = Visuals.NoGrassEnabled and 1 or 0
                 
-                -- Optimization: only process parts directly to avoid double processing
+                
                 local allDescendants = workspace:GetDescendants()
                 for i = 1, #allDescendants do
                     local v = allDescendants[i]
@@ -2263,7 +2231,7 @@ function Visuals.Update(Settings)
                             end
                         end
                         
-                        -- If not found by name, check parent model name
+                        
                         if not isGrass then
                             local parent = v.Parent
                             if parent and parent:IsA("Model") then
@@ -2293,14 +2261,14 @@ function Visuals.Unload()
     end
     Visuals.Connections = {}
     
-    -- Restore lighting on unload
+    
     Lighting.Brightness = Visuals.NormalSettings.Brightness
     Lighting.ClockTime = Visuals.NormalSettings.ClockTime
     Lighting.FogEnd = Visuals.NormalSettings.FogEnd
     Lighting.GlobalShadows = Visuals.NormalSettings.GlobalShadows
     Lighting.Ambient = Visuals.NormalSettings.Ambient
 
-    -- Restore grass
+    
     if Terrain and Visuals.HasDecorationProperty then
         Terrain.Decoration = Visuals.OriginalDecoration
     end
@@ -2332,7 +2300,7 @@ function Exploits.ApplyFastShoot(Settings)
     local tool = character:FindFirstChildOfClass("Tool")
     
     if not Settings.fastShootEnabled then 
-        -- Restore original values if they exist
+        
         if next(Exploits.OriginalFireRates) ~= nil then
             for obj, originalValue in pairs(Exploits.OriginalFireRates) do
                 if typeof(obj) == "Instance" and obj.Parent then
@@ -2340,12 +2308,12 @@ function Exploits.ApplyFastShoot(Settings)
                         obj.Value = originalValue
                     end
                 elseif type(obj) == "string" and obj:find("Attr_") then
-                    -- Extract tool and attribute name from string key if needed, 
-                    -- but it's easier to just handle it when tool is equipped
+                    
+                    
                 end
             end
             
-            -- Restore current tool attributes
+            
             if tool then
                 for name, originalValue in pairs(Exploits.OriginalFireRates) do
                     if type(name) == "string" and name:find("Attr_") then
@@ -2362,15 +2330,15 @@ function Exploits.ApplyFastShoot(Settings)
     
     if not tool then return end
 
-    -- Only apply if it's a new tool or we haven't initialized it
+    
     if Exploits.LastTool == tool then return end
     Exploits.LastTool = tool
 
-    -- Keywords to look for
+    
     local rateKeywords = {"firerate", "rpm", "speed", "shotspersecond"}
     local delayKeywords = {"delay", "cooldown", "interval", "waittime", "recovery"}
 
-    -- 1. Check Attributes
+    
     local attributes = tool:GetAttributes()
     for name, val in pairs(attributes) do
         if typeof(val) == "number" then
@@ -2400,7 +2368,7 @@ function Exploits.ApplyFastShoot(Settings)
         end
     end
 
-    -- 2. Check Values
+    
     local function checkValues(container)
         for _, v in ipairs(container:GetChildren()) do
             if v:IsA("NumberValue") or v:IsA("IntValue") then
@@ -2443,14 +2411,14 @@ function Exploits.ApplyNoRecoil(Settings)
     local tool = character:FindFirstChildOfClass("Tool")
     if not tool then return end
 
-    -- Only apply if it's a new tool
-    -- Note: We use a separate cache for recoil if we want, but sharing LastTool is fine 
-    -- as long as we don't return early if recoil is disabled but fastShoot is enabled.
-    -- To be safe, let's use a specific property.
+    
+    
+    
+    
     if Exploits.LastRecoilTool == tool then return end
     Exploits.LastRecoilTool = tool
     
-    -- 1. Check for Attributes (Modern Roblox/Trident Survival way)
+    
     local attributes = tool:GetAttributes()
     for name, _ in pairs(attributes) do
         local lowerName = name:lower()
@@ -2466,8 +2434,8 @@ function Exploits.ApplyNoRecoil(Settings)
         end
     end
 
-    -- 2. Check for Values (Legacy Roblox way)
-    -- Optimized: Only look in direct children or common sub-folders instead of ALL descendants
+    
+    
     local function checkValues(container)
         for _, v in ipairs(container:GetChildren()) do
             if v:IsA("NumberValue") or v:IsA("Vector3Value") or v:IsA("Vector2Value") or v:IsA("IntValue") then
@@ -2488,7 +2456,7 @@ function Exploits.ApplyNoRecoil(Settings)
     end
     checkValues(tool)
 
-    -- 3. Camera Sway/Shake (Common for FPS games)
+    
     local camera = workspace.CurrentCamera
     if camera then
         for _, v in ipairs(camera:GetChildren()) do
@@ -2582,7 +2550,7 @@ function Exploits.ApplyFreeCam(Aimbot, Settings)
             
             camera.CameraType = Enum.CameraType.Scriptable
             
-            -- Disable collision once and cache original values
+            
             local character = LocalPlayer.Character
             if character then
                 Exploits.OriginalCollision = {}
@@ -2624,7 +2592,7 @@ function Exploits.ApplyFreeCam(Aimbot, Settings)
         
         camera.CFrame = CFrame.new(Aimbot.FreeCamPos) * rotation
         
-        -- Override MouseBehavior to allow camera rotation in FreeCam
+        
         if UserInputService.MouseBehavior ~= Enum.MouseBehavior.LockCurrentPosition and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
             UserInputService.MouseBehavior = Enum.MouseBehavior.LockCurrentPosition
         end
@@ -2634,7 +2602,7 @@ function Exploits.ApplyFreeCam(Aimbot, Settings)
             camera.CameraType = Aimbot.OriginalCameraType or Enum.CameraType.Custom
             UserInputService.MouseBehavior = Enum.MouseBehavior.Default
             
-            -- Restore collision
+            
             local character = LocalPlayer.Character
             if character and Exploits.OriginalCollision then
                 for part, originalValue in pairs(Exploits.OriginalCollision) do
@@ -2654,12 +2622,12 @@ function Exploits.ApplyThirdPerson(Settings)
         LocalPlayer.CameraMaxZoomDistance = distance
         LocalPlayer.CameraMinZoomDistance = distance
         
-        -- Safely force Classic mode to enable zooming in restricted games
+        
         if LocalPlayer.CameraMode ~= Enum.CameraMode.Classic then
             pcall(function() LocalPlayer.CameraMode = Enum.CameraMode.Classic end)
         end
     else
-        -- Standard reset values for most Roblox games
+        
         if LocalPlayer.CameraMaxZoomDistance == (Settings.thirdPersonDistance or 10) then
             LocalPlayer.CameraMaxZoomDistance = 128
             LocalPlayer.CameraMinZoomDistance = 0.5
@@ -2678,7 +2646,7 @@ function Exploits.ApplyGodMode(Settings)
             humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
         end
         
-        -- Throttled TouchTransmitter removal (every 2 seconds instead of 0.5)
+        
         local now = tick()
         if now - Exploits.LastGodUpdate >= 2 then
             Exploits.LastGodUpdate = now
@@ -2711,33 +2679,33 @@ function Exploits.ApplyAntiAFK(Settings)
             local humanoid = character and character:FindFirstChildOfClass("Humanoid")
             if not humanoid then return end
             
-            -- Save old speed to restore it
-            local oldSpeed = humanoid.WalkSpeed
-            humanoid.WalkSpeed = math.max(oldSpeed, 24) -- Temporarily increase speed for Anti-AFK
             
-            -- Move forward
+            local oldSpeed = humanoid.WalkSpeed
+            humanoid.WalkSpeed = math.max(oldSpeed, 24) 
+            
+            
             humanoid:Move(Vector3.new(0, 0, -1), true)
             task.wait(6)
             humanoid:Move(Vector3.new(0, 0, 0), true)
             
             task.wait(6)
             
-            -- Move backward
+            
             humanoid:Move(Vector3.new(0, 0, 1), true)
             task.wait(6)
             humanoid:Move(Vector3.new(0, 0, 0), true)
             
-            -- Restore speed
+            
             humanoid.WalkSpeed = oldSpeed
             
             task.wait(6)
             
-            -- Jump (higher and longer)
+            
             humanoid.Jump = true
             task.wait(0.2)
             humanoid.Jump = false
             
-            -- Double jump check (if game supports it/extra movement)
+            
             task.wait(0.5)
             humanoid.Jump = true
             task.wait(0.2)
@@ -2754,7 +2722,7 @@ function Exploits.ApplyAntiAim(Settings)
     if not Settings.antiAimEnabled then 
         if humanoid then humanoid.AutoRotate = true end
         
-        -- Reset RootJoint transform if it was modified
+        
         if rootPart then
             local rootJoint = rootPart:FindFirstChild("RootJoint") or (character:FindFirstChild("LowerTorso") and character.LowerTorso:FindFirstChild("Root"))
             if rootJoint then
@@ -2766,42 +2734,42 @@ function Exploits.ApplyAntiAim(Settings)
     
     if not rootPart or not humanoid then return end
     
-    -- Disable auto-rotate so we have full control and no jitter
+    
     if humanoid.AutoRotate then humanoid.AutoRotate = false end
     
     local speed = Settings.antiAimSpeed or 50
     local mode = Settings.antiAimMode or "Spin"
     
-    -- Calculate AA rotation (relative to current position)
+    
     local aaAngle = 0
     if mode == "Spin" then
-        -- Constant rotation based on time
+        
         aaAngle = math.rad((tick() * (speed * 10)) % 360)
     elseif mode == "Jitter" then
-        -- Fast switching between angles
+        
         aaAngle = math.rad((tick() * 1000 % 200 < 100) and 90 or -90)
     elseif mode == "Static" then
-        -- Face backward to hide head
+        
         aaAngle = math.rad(180)
     end
 
-    -- 1. Rotate the HumanoidRootPart (this replicates to others)
-    -- We base it on the camera's orientation to maintain movement direction
+    
+    
     local camera = workspace.CurrentCamera
     local lookVector = camera.CFrame.LookVector
     local flatLook = Vector3.new(lookVector.X, 0, lookVector.Z).Unit
     
-    -- FIXED: Only set rotation, don't force position to prevent "rooted" effect
+    
     local targetRotation = CFrame.new(Vector3.new(), flatLook) * CFrame.Angles(0, aaAngle, 0)
     rootPart.CFrame = CFrame.new(rootPart.Position) * targetRotation.Rotation
 
-    -- 2. Local Correction: make the character look "normal" locally
-    -- We rotate the RootJoint (the connection between RootPart and Torso) in the opposite direction
+    
+    
     local rootJoint = rootPart:FindFirstChild("RootJoint") or (character:FindFirstChild("LowerTorso") and character.LowerTorso:FindFirstChild("Root"))
     
     if rootJoint then
-        -- Invert the AA angle for the visual parts locally
-        -- This ensures that for the local player, the character faces where they look
+        
+        
         rootJoint.Transform = CFrame.Angles(0, -aaAngle, 0)
     end
 end
@@ -2816,7 +2784,7 @@ local LocalPlayer = Players.LocalPlayer
 
 local Hitboxes = {
     lastHitboxUpdate = 0,
-    OriginalProperties = {} -- Cache for original part properties
+    OriginalProperties = {} 
 }
 
 function Hitboxes.UpdateHitboxes(Aimbot, Settings, Utils, ESP)
@@ -2873,7 +2841,7 @@ function Hitboxes.UpdateHitboxes(Aimbot, Settings, Utils, ESP)
                 
                 if part.Size ~= targetSize then
                     part.Size = targetSize
-                    part.CanCollide = false -- Prevent physics glitches with large hitboxes
+                    part.CanCollide = false 
                 end
 
                 if Settings.hitboxExpanderShow then
@@ -2898,13 +2866,13 @@ function Hitboxes.UpdateHitboxes(Aimbot, Settings, Utils, ESP)
         end
     end
     
-    -- Cleanup for players who left or died (Optimized to avoid keeping strong references)
+    
     for part, props in pairs(Hitboxes.OriginalProperties) do
         local char = part and part.Parent
         local humanoid = char and char:FindFirstChildOfClass("Humanoid")
         
         if not part or not char or not char.Parent or not humanoid or humanoid.Health <= 0 then
-            -- Use pcall for safety during cleanup
+            
             pcall(function()
                 if part and part.Parent then
                     part.Size = props.Size
@@ -2938,7 +2906,7 @@ function Hooks.InitHooks(Aimbot, Settings, Utils, Ballistics)
     local oldNamecall
     local insideHook = false
     
-    -- Shared objects for better performance
+    
     local currentCharacter = nil
     local currentHumanoid = nil
     local currentTool = nil
@@ -2956,26 +2924,26 @@ function Hooks.InitHooks(Aimbot, Settings, Utils, Ballistics)
     currentHumanoid = currentCharacter and currentCharacter:FindFirstChildOfClass("Humanoid")
 
     oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-        -- ABSOLUTELY INSTANT RETURN for our own calls and recursion
+        
         if checkcaller() or insideHook then return oldNamecall(self, ...) end
         
         local method = getnamecallmethod()
         local args = {...}
         
-        -- JumpShot logic (minimal overhead)
+        
         if method == "GetState" and Settings.jumpShotEnabled then
             if self == currentHumanoid then
                 return Enum.HumanoidStateType.Landed
             end
         end
 
-        -- Silent Aim logic
-        -- CRITICAL: Only intercept if silent aim is enabled AND we have a valid target
-        -- AND we are actually holding the aim key (if required)
+        
+        
+        
         if Settings.silentAimEnabled and (Aimbot.IsAiming or Settings.aimKeyMode == "Always") then
             local target = Aimbot.SilentTarget
             if target and target.targetPart then
-                -- Weapon Check Throttling (Optimized for faster switching)
+                
                 local now = tick()
                 if now - lastWeaponCheck > 0.1 then
                     lastWeaponCheck = now
@@ -2990,31 +2958,31 @@ function Hooks.InitHooks(Aimbot, Settings, Utils, Ballistics)
                     insideHook = false
                 end
                 
-                -- Only hook if we are holding a weapon or if we want to hook everything (not recommended)
+                
                 if isWeaponCache then
                     local cam = workspace.CurrentCamera
                     
-                    -- Raycast Hook
+                    
                     if method == "Raycast" and self == workspace then
                         local origin = args[1]
-                        -- Ensure it's a weapon fire by checking distance to camera/tool
-                        -- Increased distance to 50 to avoid accidental "jams" during movement
+                        
+                        
                         if typeof(origin) == "Vector3" and cam and (origin - cam.CFrame.Position).Magnitude < 50 then
-                            -- Pass origin to prediction for 100% accuracy from muzzle
+                            
                             local predictedDir = Aimbot.GetProjectilePrediction(target, Settings, Ballistics, origin)
                             
-                            -- Use a slightly larger distance for the ray to ensure it reaches the target,
-                            -- especially when drop compensation is active (which increases path length).
+                            
+                            
                             local dist = (target.targetPart.Position - origin).Magnitude
-                            local rayDist = dist * 1.5 -- 50% buffer to avoid "short rays"
+                            local rayDist = dist * 1.5 
                             local direction = predictedDir * rayDist
                             
-                            -- Magic Bullet: Improved registration
+                            
                             if Settings.magicBulletEnabled then
-                                -- CRITICAL: Use Utils.getCharacter to support games like Trident Survival
+                                
                                 local targetChar = Utils.getCharacter(target.player)
                                 if targetChar then
-                                    -- Use Include filter to bypass walls/obstacles
+                                    
                                     sharedRaycastParams.FilterDescendantsInstances = {targetChar}
                                     return oldNamecall(self, origin, direction, sharedRaycastParams)
                                 end
@@ -3023,21 +2991,21 @@ function Hooks.InitHooks(Aimbot, Settings, Utils, Ballistics)
                             return oldNamecall(self, origin, direction, args[3])
                         end
                     
-                    -- Legacy Ray Hooks (FindPartOnRay, etc.)
+                    
                     elseif (method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList" or method == "FindPartOnRayWithWhiteList") and self == workspace then
                         local ray = args[1]
-                        -- Ensure it's a weapon fire by checking distance to camera/tool
+                        
                         if typeof(ray) == "Ray" and cam and (ray.Origin - cam.CFrame.Position).Magnitude < 50 then
-                            -- Get accurate prediction for silent aim/magic bullet
+                            
                             local predictedDir = Aimbot.GetProjectilePrediction(target, Settings, Ballistics, ray.Origin)
                             local dist = (target.targetPart.Position - ray.Origin).Magnitude
-                            local rayDist = dist * 1.5 -- 50% buffer to avoid "short rays"
+                            local rayDist = dist * 1.5 
                             local newRay = Ray.new(ray.Origin, predictedDir * rayDist)
                             
-                            -- Use the target's current position for the hit registration to be 100% accurate
+                            
                             local hitPos = target.targetPart.Position
                             
-                            -- Magic Bullet: Improved registration
+                            
                             if Settings.magicBulletEnabled then
                                 return target.targetPart, hitPos, Vector3.new(0, 1, 0), target.targetPart.Material
                             end
@@ -3093,15 +3061,15 @@ function Prediction.GetProjectilePrediction(target, Settings, Ballistics, custom
     local targetPos = target.targetPart.Position
     local targetVelocity = target.velocity or Vector3.new(0, 0, 0)
     
-    -- Продвинутое предсказание на основе MoveDirection (нажатий клавиш)
+    
     if target.player and target.player.Character then
         local humanoid = target.player.Character:FindFirstChildOfClass("Humanoid")
         if humanoid then
             local moveDir = humanoid.MoveDirection
             if moveDir.Magnitude > 0.1 then
-                -- Если враг движется, используем MoveDirection вместо чистой Velocity,
-                -- так как Velocity может быть нестабильной из-за пинга или физики.
-                -- Мы комбинируем MoveDirection с текущей скоростью для точности.
+                
+                
+                
                 local walkSpeed = humanoid.WalkSpeed or 16
                 targetVelocity = Vector3.new(moveDir.X * walkSpeed, targetVelocity.Y, moveDir.Z * walkSpeed)
             end
@@ -3111,17 +3079,17 @@ function Prediction.GetProjectilePrediction(target, Settings, Ballistics, custom
     local v = Settings.projectileSpeed or 1000
     local g = Settings.projectileGravity or 196.2
     
-    -- Dynamic ballistics if enabled and Ballistics module is provided
+    
     if Settings.ballisticsEnabled and Ballistics then
         local config = Ballistics.GetConfig()
         if config then
             v = config.velocity or v
-            -- Ensure gravity is handled correctly (as a positive value for magnitude)
+            
             g = math.abs(config.gravity or g)
         end
     end
     
-    -- Sanity check for velocity to prevent division by zero or extreme values
+    
     v = math.max(v, 10)
     
     if not Settings.projectilePredictionEnabled then
@@ -3129,23 +3097,23 @@ function Prediction.GetProjectilePrediction(target, Settings, Ballistics, custom
     end
     
     local dist = (targetPos - origin).Magnitude
-    -- If target is extremely close, skip prediction to prevent jitter/jump
+    
     if dist < 0.5 then
         return (targetPos - origin).Unit
     end
     
     local pFactor = Settings.predictionFactor or 1
-    local iterations = Settings.predictionIterations or 10 -- Reduced for performance, 25 was overkill
+    local iterations = Settings.predictionIterations or 10 
     local gvec = Vector3.new(0, -g, 0)
-    local hitscanThreshold = Settings.hitscanVelocityThreshold or 1500 -- Increased for modern games
+    local hitscanThreshold = Settings.hitscanVelocityThreshold or 1500 
     local targetG = workspace.Gravity or 196.2
     
-    -- 1. Hitscan mode (High velocity weapons)
+    
     if v >= hitscanThreshold then
         local t = dist / v
         local lead = targetVelocity * t * pFactor
         
-        -- Stabilize lead
+        
         local maxLead = dist * 0.5
         if lead.Magnitude > maxLead then
             lead = lead.Unit * maxLead
@@ -3160,33 +3128,33 @@ function Prediction.GetProjectilePrediction(target, Settings, Ballistics, custom
         return (aimPoint - origin).Unit
     end
     
-    -- 2. Projectile mode (Bows, Crossbows, etc.)
+    
     local t = dist / v
     local dir
     
-    -- Safety clamp for initial time to prevent extreme offsets
+    
     t = math.min(t, 5) 
 
     for i = 1, iterations do
         local lead = targetVelocity * t * pFactor
         
-        -- Stabilize lead
+        
         local maxLead = dist * 0.5
         if lead.Magnitude > maxLead then
             lead = lead.Unit * maxLead
         end
         
-        -- Target movement prediction
+        
         local targetFall = Vector3.new(0, 0, 0)
         if target.isFreefalling then
             targetFall = Vector3.new(0, 0.5 * targetG * (t * t), 0)
         end
         
-        -- Bullet drop compensation
+        
         local dropComp = g * 0.5 * (t * t)
         
-        -- CRITICAL FIX: Limit bullet drop compensation to prevent "320 degrees up" jump
-        -- Compensation should never be more than the distance to target unless sniping at extreme ranges
+        
+        
         local maxDropComp = dist * 1.5 
         dropComp = math.min(dropComp, maxDropComp)
         
@@ -3201,7 +3169,7 @@ function Prediction.GetProjectilePrediction(target, Settings, Ballistics, custom
         dir = toAim.Unit
         local newT = newDist / v
         
-        -- Prevent T from exploding
+        
         newT = math.min(newT, 5)
         
         if math.abs(newT - t) < 0.0005 then
@@ -3213,9 +3181,9 @@ function Prediction.GetProjectilePrediction(target, Settings, Ballistics, custom
     
     local finalDir = dir or (targetPos - origin).Unit
     
-    -- Final sanity check: if the direction is somehow NaN or extreme, return default
+    
     if finalDir.X ~= finalDir.X or math.abs(finalDir.Y) > 0.999 then
-        -- This handles the "looking straight up/down" edge cases
+        
         if dist > 0.1 then
             return (targetPos - origin).Unit
         end
@@ -3237,7 +3205,7 @@ local Targeting = {
     SharedFilter = {}
 }
 
--- Initialize shared params
+
 Targeting.SharedRaycastParams.FilterType = Enum.RaycastFilterType.Exclude
 Targeting.SharedRaycastParams.IgnoreWater = true
 
@@ -3257,7 +3225,7 @@ function Targeting.FindTarget(Settings, Utils, Aimbot)
             local rootPart = character:FindFirstChild("HumanoidRootPart")
             
             if humanoid and humanoid.Health > 0 and rootPart then
-                -- Smart Hitbox selection: if primary part isn't visible, try others
+                
                 if not targetObj then targetObj = character:FindFirstChild("Head") end
                 
                 local isVisible = false
@@ -3267,7 +3235,7 @@ function Targeting.FindTarget(Settings, Utils, Aimbot)
                     isVisible = Utils.isPartVisible(targetObj, character)
                     
                     if not isVisible and Settings.targetPart ~= "Torso" then
-                        -- Try Torso as fallback
+                        
                         local torso = Utils.getBodyPart(character, "Torso")
                         if torso and Utils.isPartVisible(torso, character) then
                             isVisible = true
@@ -3276,7 +3244,7 @@ function Targeting.FindTarget(Settings, Utils, Aimbot)
                     end
                     
                     if not isVisible then
-                        -- Multipoint visibility check for higher registration (90% target)
+                        
                         local size = targetObj.Size * 0.4
                         local points = {
                             targetObj.Position + Vector3.new(size.X, size.Y, size.Z),
@@ -3294,17 +3262,17 @@ function Targeting.FindTarget(Settings, Utils, Aimbot)
                         end
                     end
                     
-                    -- Magic Bullet logic
+                    
                     if not isVisible and Settings.magicBulletEnabled then
                         if Settings.magicBulletHouseCheck then
-                            -- Only allow if it's NOT a house (e.g. just a hill/wall)
+                            
                             local cam = workspace.CurrentCamera
                             if cam then
                                 local camPos = cam.CFrame.Position
                                 local direction = (targetObj.Position - camPos)
                                 local params = Targeting.SharedRaycastParams
                                 
-                                -- Optimized: reuse filter table
+                                
                                 local filter = Targeting.SharedFilter
                                 for k in pairs(filter) do filter[k] = nil end
                                 
@@ -3320,13 +3288,13 @@ function Targeting.FindTarget(Settings, Utils, Aimbot)
                                 params.FilterDescendantsInstances = filter
                                 
                                 local rayResult = workspace:Raycast(camPos, direction, params)
-                                -- Если луч ни во что не врезался ИЛИ врезался в НЕ дом — цель "видна" для магик пули
+                                
                                 if not rayResult or not Utils.isHouse(rayResult.Instance) then
                                     isVisible = true
                                 end
                             end
                         else
-                            -- Если проверка домов выключена, то для аимбота цель всегда "видима"
+                            
                             isVisible = true
                         end
                     end
@@ -3337,20 +3305,20 @@ function Targeting.FindTarget(Settings, Utils, Aimbot)
                 if isVisible then
                     local pos, onScreen = camera:WorldToViewportPoint(bestPart.Position)
                     
-                    -- Improved FOV check: if we're already aiming at someone, allow a slightly larger FOV
-                    -- to prevent flickering and sudden camera resets (the "180 spin" issue).
+                    
+                    
                     local baseFov = Settings.fovSize or 90
                     local currentFov = baseFov
                     
                     if Aimbot and Aimbot.CurrentTarget and Aimbot.CurrentTarget.player == player then
-                        currentFov = currentFov * 1.5 -- 50% buffer for sticky aim
+                        currentFov = currentFov * 1.5 
                     end
                     
                     if onScreen then
                         local screenDistance = (Vector2.new(pos.X, pos.Y) - screenCenter).Magnitude
                         local worldDistance = (bestPart.Position - camera.CFrame.Position).Magnitude
                         
-                        -- Ограничение по дистанции из настроек ESP
+                        
                         local maxDistStuds = Settings.espMaxDistance or 700
                         if worldDistance <= maxDistStuds and screenDistance < currentFov then
                             local score = 0
@@ -3368,18 +3336,18 @@ function Targeting.FindTarget(Settings, Utils, Aimbot)
                                 bestScore = score
                                 local humanoidState = humanoid:GetState()
                                 local isFalling = (humanoidState == Enum.HumanoidStateType.Freefall or humanoidState == Enum.HumanoidStateType.Jumping)
-                                -- Дополнительная проверка: если он "падает", но скорость по Y почти нулевая, 
-                                -- то скорее всего это ошибка стейта или он стоит на краю.
+                                
+                                
                                 if isFalling and math.abs(rootPart.Velocity.Y) < 1.5 then
                                     isFalling = false
                                 end
                                 
-                                -- Stabilize velocity for prediction (mix with MoveDirection if possible)
+                                
                                 local targetVel = rootPart.Velocity
                                 if humanoid.MoveDirection.Magnitude > 0 then
                                     local moveDir = humanoid.MoveDirection
                                     local speed = humanoid.WalkSpeed
-                                    -- Use MoveDirection for XZ, keep Velocity for Y
+                                    
                                     targetVel = Vector3.new(moveDir.X * speed, targetVel.Y, moveDir.Z * speed)
                                 end
 
@@ -3392,7 +3360,7 @@ function Targeting.FindTarget(Settings, Utils, Aimbot)
                                     distance = screenDistance,
                                     worldDistance = worldDistance,
                                     isFreefalling = isFalling,
-                                    isVisible = isVisible -- Store visibility for Hooks
+                                    isVisible = isVisible 
                                 }
                             end
                         end
@@ -3423,7 +3391,7 @@ function Chams.Update(player, character, humanoid, Settings, activeHighlights, m
             highlight.Parent = State.GetContainer()
             State.Highlights[player] = highlight
             
-            -- Скрываем меши аксессуаров один раз
+            
             for _, v in ipairs(character:GetChildren()) do
                 if v:IsA("Accessory") then
                     local handle = v:FindFirstChild("Handle")
@@ -3438,7 +3406,7 @@ function Chams.Update(player, character, humanoid, Settings, activeHighlights, m
         h.Enabled = true
         h.Adornee = character
         
-        -- Apply Chams Mode
+        
         if Settings.espChamsMode == "Glow" then
             h.FillTransparency = 0.5
             h.OutlineTransparency = 0
@@ -3455,7 +3423,7 @@ function Chams.Update(player, character, humanoid, Settings, activeHighlights, m
             h.FillColor = Settings.espColor
             h.OutlineColor = Settings.espOutlineColor or Color3.new(1, 1, 1)
         end
-        return true -- activeHighlights + 1
+        return true 
     else
         if State.Highlights[player] then
             State.Highlights[player].Enabled = false
@@ -3552,11 +3520,11 @@ function Healthbars.Update(player, character, rootPart, humanoid, Settings, isWi
             local lengthPx = math.max(1, math.floor(baseLength * scale + 0.5))
             local thicknessPx = math.max(1, math.floor(baseThickness * scale + 0.5))
             
-            -- Health Color (Green -> Red)
+            
             local color = Color3.fromHSV(healthPercent * 0.3, 1, 1)
             fill.BackgroundColor3 = color
             
-            -- Text Update
+            
             if Settings.espHealthBarText then
                 text.Visible = true
                 text.Text = math.floor(humanoid.Health)
@@ -3564,7 +3532,7 @@ function Healthbars.Update(player, character, rootPart, humanoid, Settings, isWi
                 text.Visible = false
             end
             
-            -- Layout logic based on position
+            
             if position == "Left" then
                 bbg.Size = UDim2.new(0, thicknessPx, 0, lengthPx)
                 bbg.StudsOffset = Vector3.new(-2.5, 0, 0)
@@ -3823,21 +3791,21 @@ function Labels.Update(player, character, rootPart, humanoid, Settings, distance
                 enemySlotsFrame.Visible = true
                 local items = {}
                 
-                -- Optimization: only update slots if visible and character changed or every few frames
-                -- We can use a simple tick() check on the bbg itself
+                
+                
                 local lastItemUpdate = bbg:GetAttribute("LastItemUpdate") or 0
                 local now = tick()
                 
                 if now - lastItemUpdate > 1 then
                     bbg:SetAttribute("LastItemUpdate", now)
                     
-                    -- Get equipped tool
+                    
                     local equipped = character:FindFirstChildWhichIsA("Tool")
                     if equipped then
                         table.insert(items, equipped)
                     end
                     
-                    -- Get backpack items
+                    
                     local backpack = player:FindFirstChild("Backpack")
                     if backpack then
                         local backpackChildren = backpack:GetChildren()
@@ -3942,7 +3910,7 @@ function Skeleton.Draw(player, character, Settings)
     local isR15 = character:FindFirstChild("UpperTorso") ~= nil
     local bones = isR15 and R15_BONES or R6_BONES
 
-    -- Clear extra lines if type changed
+    
     if #skeleton > #bones then
         for i = #bones + 1, #skeleton do
             skeleton[i]:Destroy()
