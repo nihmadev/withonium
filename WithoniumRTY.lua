@@ -1470,6 +1470,7 @@ local function createSettings(window)
 	end
 
 	local newTab = window:CreateTab('WithoniumRTY Settings', 0, true)
+	local MainSettings, ConfigSettings = newTab:Split(0.55)
 
 	if TabList['WithoniumRTY Settings'] then
 		TabList['WithoniumRTY Settings'].LayoutOrder = 1000
@@ -1479,11 +1480,11 @@ local function createSettings(window)
 		Elements['WithoniumRTY Settings'].LayoutOrder = 1000
 	end
 	for categoryName, settingCategory in pairs(settingsTable) do
-		newTab:CreateSection(categoryName)
+		MainSettings:CreateSection(categoryName)
 
 		for settingName, setting in pairs(settingCategory) do
 			if setting.Type == 'input' then
-				setting.Element = newTab:CreateInput({
+				setting.Element = MainSettings:CreateInput({
 					Name = setting.Name,
 					CurrentValue = setting.Value,
 					PlaceholderText = setting.Placeholder,
@@ -1494,7 +1495,7 @@ local function createSettings(window)
 					end,
 				})
 			elseif setting.Type == 'toggle' then
-				setting.Element = newTab:CreateToggle({
+				setting.Element = MainSettings:CreateToggle({
 					Name = setting.Name,
 					CurrentValue = setting.Value,
 					Ext = true,
@@ -1503,7 +1504,7 @@ local function createSettings(window)
 					end,
 				})
 			elseif setting.Type == 'bind' then
-				setting.Element = newTab:CreateKeybind({
+				setting.Element = MainSettings:CreateKeybind({
 					Name = setting.Name,
 					CurrentKeybind = setting.Value,
 					HoldToInteract = false,
@@ -1516,6 +1517,109 @@ local function createSettings(window)
 			end
 		end
 	end
+
+	ConfigSettings:CreateSection('Configs')
+
+	local ConfigInput = ConfigSettings:CreateInput({
+		Name = 'Config Name',
+		PlaceholderText = 'Enter name',
+		RemoveTextAfterFocusLost = false,
+		Ext = true,
+		Callback = function() end
+	})
+
+	ConfigSettings:CreateButton({
+		Name = 'Create New',
+		Ext = true,
+		Callback = function()
+			CFileName = ConfigInput.CurrentValue
+			SaveConfiguration()
+			WithoniumRTYLibrary:Notify({Title = 'Config Created', Content = 'Created '..CFileName, Duration = 5})
+		end
+	})
+
+	ConfigSettings:CreateSection('Existing Configs')
+
+	local function updateConfigs()
+		ConfigSettings:Clear()
+		ConfigSettings:CreateSection('Configs')
+		
+		ConfigInput = ConfigSettings:CreateInput({
+			Name = 'Config Name',
+			PlaceholderText = 'Enter name',
+			RemoveTextAfterFocusLost = false,
+			Ext = true,
+			Callback = function() end
+		})
+
+		ConfigSettings:CreateButton({
+			Name = 'Create New',
+			Ext = true,
+			Callback = function()
+				CFileName = ConfigInput.CurrentValue
+				SaveConfiguration()
+				updateConfigs()
+				WithoniumRTYLibrary:Notify({Title = 'Config Created', Content = 'Created '..CFileName, Duration = 5})
+			end
+		})
+
+		ConfigSettings:CreateSection('Existing Configs')
+		
+		local configs = listfiles(ConfigurationFolder)
+		for _, file in ipairs(configs) do
+			local name = file:gsub(ConfigurationFolder..'/', ''):gsub(ConfigurationExtension, '')
+			
+			local ConfigButton = ConfigSettings:CreateButton({
+				Name = name,
+				Ext = true,
+				Callback = function()
+					CFileName = name
+					ConfigInput:Set(name)
+				end
+			})
+
+			-- Добавляем кнопки управления справа
+			local Container = Instance.new("Frame")
+			Container.Name = "Controls"
+			Container.Size = UDim2.new(0, 60, 1, -10)
+			Container.Position = UDim2.new(1, -70, 0, 5)
+			Container.BackgroundTransparency = 1
+			Container.Parent = ConfigSettings.Element -- Используем сохраненную ссылку на объект кнопки
+			
+			local Layout = Instance.new("UIListLayout")
+			Layout.FillDirection = Enum.FillDirection.Horizontal
+			Layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+			Layout.VerticalAlignment = Enum.VerticalAlignment.Center
+			Layout.Padding = UDim.new(0, 5)
+			Layout.Parent = Container
+
+			local function CreateControl(icon, callback, color)
+				local btn = Instance.new("ImageButton")
+				btn.Size = UDim2.new(0, 24, 0, 24)
+				btn.BackgroundTransparency = 1
+				btn.Image = getAssetUri(icon)
+				btn.ImageColor3 = color or SelectedTheme.TextColor
+				btn.Parent = Container
+				btn.ZIndex = 10 -- Поверх кнопки
+				btn.MouseButton1Click:Connect(callback)
+				return btn
+			end
+
+			CreateControl(4483362458, function() -- Load icon
+				CFileName = name
+				loadSettings()
+				WithoniumRTYLibrary:Notify({Title = 'Config Loaded', Content = 'Loaded '..name, Duration = 5})
+			end, Color3.fromRGB(100, 255, 100))
+
+			CreateControl(4384403532, function() -- Delete icon
+				delfile(file)
+				updateConfigs()
+				WithoniumRTYLibrary:Notify({Title = 'Config Deleted', Content = 'Deleted '..name, Duration = 5})
+			end, Color3.fromRGB(255, 100, 100))
+		end
+	end
+
+	task.spawn(updateConfigs)
 
 	settingsCreated = true
 	loadSettings()
@@ -2113,14 +2217,16 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 			end)
 
 			Button.MouseEnter:Connect(function()
-				TweenService:Create(Button, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackgroundHover}):Play()
-			end)
+					TweenService:Create(Button, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackgroundHover}):Play()
+				end)
 
-			Button.MouseLeave:Connect(function()
-				TweenService:Create(Button, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
-			end)
+				Button.MouseLeave:Connect(function()
+					TweenService:Create(Button, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
+				end)
 
-			function ButtonValue:Set(NewButton)
+				TargetTab.Element = Button
+
+				function ButtonValue:Set(NewButton)
 				Button.Title.Text = NewButton
 				Button.Name = NewButton
 			end
@@ -3503,7 +3609,20 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 			end
 			
 			local Left = CreateSubPage("Left", ratio)
+			
+			local Separator = Instance.new("Frame")
+			Separator.Name = "VerticalSeparator"
+			Separator.Size = UDim2.new(0, 1, 1, -10)
+			Separator.BackgroundColor3 = SelectedTheme.TextColor
+			Separator.BackgroundTransparency = 0.8
+			Separator.BorderSizePixel = 0
+			Separator.Parent = Container
+			
 			local Right = CreateSubPage("Right", 1 - ratio)
+			
+			WithoniumRTY.Main:GetPropertyChangedSignal('BackgroundColor3'):Connect(function()
+				Separator.BackgroundColor3 = SelectedTheme.TextColor
+			end)
 			
 			return Left, Right
 		end
