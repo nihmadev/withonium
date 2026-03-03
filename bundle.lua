@@ -771,10 +771,31 @@ local function loadWithTimeout(url: string, timeout: number?): ...any
 	end)
 
 	while not requestCompleted do task.wait() end
-	return if success then result else nil
+	return success, result
 end
 
-local WithoniumRTY = loadWithTimeout("https://raw.githubusercontent.com/nihmadev/Withonium/refs/heads/main/WithoniumRTY.lua") or error("Failed to load WithoniumRTY from server, error on string " .. result)
+local function loadLibrary(): any
+	
+	local localPath = "WithoniumRTY.lua"
+	if isfile and isfile(localPath) then
+		local success, result = pcall(function()
+			return loadstring(readfile(localPath))()
+		end)
+		if success and result then
+			return result
+		end
+	end
+
+	
+	local success, result = loadWithTimeout("https://raw.githubusercontent.com/nihmadev/Withonium/refs/heads/main/WithoniumRTY.lua")
+	if success and result then
+		return result
+	end
+	
+	error("Failed to load WithoniumRTY: " .. tostring(result))
+end
+
+local WithoniumRTY = loadLibrary()
 
 local GUI = {
     Window = nil,

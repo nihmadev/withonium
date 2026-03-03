@@ -777,13 +777,11 @@ local function getAssetUri(id: any): string
 		assetUri = "rbxassetid://" .. tostring(id)
 	elseif type(id) == "string" then
 		if tonumber(id) then
-			assetUri = "rbxassetid://" .. id
+			assetUri = "rbxassetid://" .. tostring(id)
 		elseif not id:find("rbxassetid://") and Icons then
 			local success, asset = pcall(getIcon, id)
-			if success and asset then
-				-- We can't easily return a single URI for Lucide icons because they need ImageRectOffset/Size
-				-- But for now let's just return a placeholder or handle it in the caller
-				return assetUri
+			if success and asset and asset.id then
+				return "rbxassetid://" .. tostring(asset.id)
 			end
 		elseif id:find("rbxassetid://") then
 			assetUri = id
@@ -970,7 +968,9 @@ function WithoniumRTYLibrary:Notify(data)
 			if typeof(data.Image) == 'string' and Icons then
 				local asset = getIcon(data.Image)
 
-				newNotification.Icon.Image = 'rbxassetid://'..asset.id
+				if asset and asset.id then
+					newNotification.Icon.Image = 'rbxassetid://'..tostring(asset.id)
+				end
 				newNotification.Icon.ImageRectOffset = asset.imageRectOffset
 				newNotification.Icon.ImageRectSize = asset.imageRectSize
 			else
@@ -1877,7 +1877,9 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 			if typeof(Image) == 'string' and Icons then
 				local asset = getIcon(Image)
 
-				TabButton.Image.Image = 'rbxassetid://'..asset.id
+				if asset and asset.id then
+					TabButton.Image.Image = 'rbxassetid://'..tostring(asset.id)
+				end
 				TabButton.Image.ImageRectOffset = asset.imageRectOffset
 				TabButton.Image.ImageRectSize = asset.imageRectSize
 			else
@@ -2009,7 +2011,9 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 				
 				if typeof(iconId) == "string" and not iconId:find("rbxassetid://") and not tonumber(iconId) and Icons then
 					local asset = getIcon(iconId)
-					IconLabel.Image = 'rbxassetid://'..asset.id
+					if asset and asset.id then
+						IconLabel.Image = 'rbxassetid://'..tostring(asset.id)
+					end
 					IconLabel.ImageRectOffset = asset.imageRectOffset
 					IconLabel.ImageRectSize = asset.imageRectSize
 				else
@@ -2406,7 +2410,9 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 				if typeof(Icon) == 'string' and Icons then
 					local asset = getIcon(Icon)
 
-					Label.Icon.Image = 'rbxassetid://'..asset.id
+					if asset and asset.id then
+						Label.Icon.Image = 'rbxassetid://'..tostring(asset.id)
+					end
 					Label.Icon.ImageRectOffset = asset.imageRectOffset
 					Label.Icon.ImageRectSize = asset.imageRectSize
 				else
@@ -2424,7 +2430,9 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 					if typeof(Icon) == 'string' and Icons then
 						local asset = getIcon(Icon)
 
-						Label.Icon.Image = 'rbxassetid://'..asset.id
+						if asset and asset.id then
+							Label.Icon.Image = 'rbxassetid://'..tostring(asset.id)
+						end
 						Label.Icon.ImageRectOffset = asset.imageRectOffset
 						Label.Icon.ImageRectSize = asset.imageRectSize
 					else
@@ -2463,7 +2471,9 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 						if typeof(Icon) == 'string' and Icons then
 							local asset = getIcon(Icon)
 
-							Label.Icon.Image = 'rbxassetid://'..asset.id
+							if asset and asset.id then
+								Label.Icon.Image = 'rbxassetid://'..tostring(asset.id)
+							end
 							Label.Icon.ImageRectOffset = asset.imageRectOffset
 							Label.Icon.ImageRectSize = asset.imageRectSize
 						else
