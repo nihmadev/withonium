@@ -1454,22 +1454,40 @@ function GUI.Init(Settings, Utils, UnloadCallback, ConfigManager)
 
     -- Settings Tab (rbxassetid://7072721682)
     local SettingsTab = GUI.Window:CreateTab("Settings", 7072721682)
+    local MainSettings, ConfigsSide = SettingsTab:Split(0.75)
     
-    -- Левая колонка (3/4) - основные настройки
-    local LeftColumn = SettingsTab:CreateColumn()
-    
-    LeftColumn:CreateSection("Config Creation")
-    LeftColumn:CreateInput({
+    MainSettings:CreateSection("Config Creation")
+    MainSettings:CreateInput({
         Name = "New Config Name",
         PlaceholderText = "shlepa228",
         RemoveTextAfterFocusLost = false,
         Callback = function(Text) GUI.ConfigName = Text end
     })
-    LeftColumn:CreateButton({
+    
+    local function UpdateConfigList()
+        -- Use the library's section/buttons for the side panel too
+        -- Note: We need a way to "refresh" or "clear" a sub-tab, 
+        -- but for now let's just use CreateButton for each config.
+        
+        -- To clear, we can reach into the TabPage of the sub-tab if we exposed it, 
+        -- but it's easier to just use the library's native methods as much as possible.
+        
+        -- Let's add a helper in GUI to refresh the configs panel
+    end
+
+    -- Actually, for the dynamic config list, we might still need some custom logic 
+    -- if the library doesn't support clearing sections.
+    -- But the user wants it to "depend on the lib".
+    
+    -- I'll implement a custom "ConfigList" section in the right sub-tab.
+
+    MainSettings:CreateButton({
          Name = "Save Current as New Config",
          Callback = function()
              if GUI.ConfigManager then
                  GUI.ConfigManager.Save(GUI.ConfigName, Settings)
+                 -- Update list logic
+                 GUI.UpdateConfigList(ConfigsSide, Settings)
                  GUI.Window:Notify({
                      Title = "Config Saved",
                      Content = "Configuration " .. GUI.ConfigName .. " has been successfully saved.",
@@ -1479,9 +1497,11 @@ function GUI.Init(Settings, Utils, UnloadCallback, ConfigManager)
              	end
          end
      })
+ 
+    GUI.UpdateConfigList(ConfigsSide, Settings)
 
-    LeftColumn:CreateSection("Menu Customization")
-    GUI.Elements.Toggles["watermarkEnabled"] = LeftColumn:CreateToggle({
+    MainSettings:CreateSection("Menu Customization")
+    GUI.Elements.Toggles["watermarkEnabled"] = MainSettings:CreateToggle({
         Name = "Watermark",
         CurrentValue = Settings.watermarkEnabled,
         Flag = "watermarkEnabled",
@@ -1491,7 +1511,7 @@ function GUI.Init(Settings, Utils, UnloadCallback, ConfigManager)
             if GUI.KeybindList.Frame then GUI.KeybindList.Frame.Visible = Value end
         end
     })
-    LeftColumn:CreateKeybind({
+    MainSettings:CreateKeybind({
         Name = "Menu Toggle",
         CurrentKeybind = getKeyName(Settings.toggleKey),
         HoldToInteract = false,
@@ -1499,8 +1519,8 @@ function GUI.Init(Settings, Utils, UnloadCallback, ConfigManager)
         Callback = function(Key) setKeybind(Key, Settings, "toggleKey") end
     })
 
-    LeftColumn:CreateSection("System")
-    LeftColumn:CreateButton({
+    MainSettings:CreateSection("System")
+    MainSettings:CreateButton({
         Name = "Unload Script",
         Callback = function()
             if GUI.UnloadCallback then
@@ -1509,53 +1529,65 @@ function GUI.Init(Settings, Utils, UnloadCallback, ConfigManager)
             GUI.Window:Destroy()
         end
     })
-    
-    -- Правая колонка (1/4) - управление конфигами
-    local RightColumn = SettingsTab:CreateColumn()
-    
-    RightColumn:CreateSection("Manage Configs")
-    if GUI.ConfigManager then
-        local configsList = GUI.ConfigManager.List()
-        local selectedConfig = configsList[1] or "none"
-        
-        local configDropdown = RightColumn:CreateDropdown({
-            Name = "Select Config",
-            Options = configsList,
-            CurrentOption = {configsList[1] or "None"},
-            Flag = "selectedConfig",
-            Callback = function(Option) selectedConfig = Option[1] end
-        })
+end
 
-        RightColumn:CreateButton({
-            Name = "rbxassetid://78689563976440",
-            Callback = function()
-                if selectedConfig and selectedConfig ~= "none" then
-                    GUI.ConfigManager.Load(selectedConfig, Settings)
+function GUI.UpdateConfigList(ConfigsSide, Settings)
+    -- This is tricky because the library doesn't have a "Clear" method for tabs.
+    -- I will add a "Clear" method to the library's Tab/SubTab object.
+    if ConfigsSide.Clear then
+        ConfigsSide:Clear()
+    end
+    
+    ConfigsSide:CreateSection("Configs")
+    
+    if GUI.ConfigManager then
+        local configs = GUI.ConfigManager.List()
+        for _, name in ipairs(configs) do
+            -- Create a "Row" using library buttons? 
+            -- The user wants 1/4 split with Delete and Load buttons using icons.
+            
+            -- I'll use a Paragraph or just a Section for the name, 
+            -- and then two buttons below or beside it.
+            
+            -- Since the library doesn't have rows, I'll just use two buttons with icons.
+            -- One for Load, one for Delete.
+            
+            ConfigsSide:CreateLabel(name)
+            
+            -- Load Button (78689563976440)
+            ConfigsSide:CreateButton({
+                Name = "Load",
+                Icon = "78689563976440",
+                Callback = function()
+                    GUI.ConfigManager.Load(name, Settings)
                     GUI.UpdateToggles(Settings)
                     GUI.Window:Notify({
                         Title = "Config Loaded",
-                        Content = "Configuration " .. selectedConfig .. " has been loaded.",
+                        Content = "Configuration " .. name .. " has been loaded.",
                         Duration = 5,
                         Image = 4483362458
                     })
                 end
-            end
-        })
+            })
 
-        RightColumn:CreateButton({
-            Name = "rbxassetid://111704740561400",
-            Callback = function()
-                if selectedConfig and selectedConfig ~= "none" then
-                    GUI.ConfigManager.Delete(selectedConfig)
+            -- Delete Button (111704740561400)
+            ConfigsSide:CreateButton({
+                Name = "Delete",
+                Icon = "111704740561400",
+                Callback = function()
+                    GUI.ConfigManager.Delete(name)
+                    GUI.UpdateConfigList(ConfigsSide, Settings)
                     GUI.Window:Notify({
                         Title = "Config Deleted",
-                        Content = "Configuration " .. selectedConfig .. " has been deleted.",
+                        Content = "Configuration " .. name .. " has been deleted.",
                         Duration = 5,
                         Image = 4483362458
                     })
                 end
-            end
-        })
+            })
+            
+            ConfigsSide:CreateDivider()
+        end
     end
 end
 

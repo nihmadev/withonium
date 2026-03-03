@@ -771,7 +771,7 @@ local function getIcon(name : string): {id: number, imageRectSize: Vector2, imag
 end
 local function getAssetUri(id: any): string
 	local assetUri = "rbxassetid://0"
-	if type(id) == "number" then
+	if type(id) == "number" or (type(id) == "string" and tonumber(id)) then
 		assetUri = "rbxassetid://" .. id
 	elseif type(id) == "string" and not Icons then
 		warn("WithoniumRTY | Cannot use Lucide icons as icons library is not loaded")
@@ -1966,6 +1966,19 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 		end)
 
 		local Tab = {}
+		local function ApplyTabMethods(Tab, TabPage)
+		local SDone = false
+
+		function Tab:Clear()
+			for _, child in ipairs(TabPage:GetChildren()) do
+				if child.ClassName == "Frame" and child.Name ~= "Placeholder" then
+					child:Destroy()
+				elseif child.Name == "SplitContainer" then
+					child:Destroy()
+				end
+			end
+			SDone = false
+		end
 		function Tab:CreateButton(ButtonSettings)
 			local ButtonValue = {}
 
@@ -1974,6 +1987,34 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 			Button.Title.Text = ButtonSettings.Name
 			Button.Visible = true
 			Button.Parent = TabPage
+
+			if ButtonSettings.Image or ButtonSettings.Icon then
+				local iconId = ButtonSettings.Image or ButtonSettings.Icon
+				local IconLabel = Instance.new("ImageLabel")
+				IconLabel.Name = "Icon"
+				IconLabel.BackgroundTransparency = 1
+				IconLabel.Size = UDim2.new(0, 20, 0, 20)
+				IconLabel.Position = UDim2.new(0, 10, 0.5, -10)
+				
+				if typeof(iconId) == "string" and not iconId:find("rbxassetid://") and not tonumber(iconId) and Icons then
+					local asset = getIcon(iconId)
+					IconLabel.Image = 'rbxassetid://'..asset.id
+					IconLabel.ImageRectOffset = asset.imageRectOffset
+					IconLabel.ImageRectSize = asset.imageRectSize
+				else
+					IconLabel.Image = getAssetUri(iconId)
+				end
+				
+				IconLabel.ImageColor3 = SelectedTheme.TextColor
+				IconLabel.Parent = Button
+				
+				if ButtonSettings.Name == "" or not ButtonSettings.Name then
+					Button.Title.Visible = false
+					IconLabel.Position = UDim2.new(0.5, -10, 0.5, -10)
+				else
+					Button.Title.Position = UDim2.new(0, 40, 0.5, 0)
+				end
+			end
 
 			Button.BackgroundTransparency = 1
 			Button.UIStroke.Transparency = 1
@@ -3342,6 +3383,52 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 
 			return SliderSettings
 		end
+		end
+		ApplyTabMethods(Tab, TabPage)
+
+		function Tab:Split(ratio)
+			ratio = ratio or 0.75
+			
+			-- Clear existing layout in TabPage if any
+			local list = TabPage:FindFirstChildOfClass("UIListLayout")
+			if list then list.Enabled = false end
+			
+			local Container = Instance.new("Frame")
+			Container.Name = "SplitContainer"
+			Container.Size = UDim2.new(1, 0, 1, 0)
+			Container.BackgroundTransparency = 1
+			Container.Parent = TabPage
+			
+			local Layout = Instance.new("UIListLayout")
+			Layout.FillDirection = Enum.FillDirection.Horizontal
+			Layout.SortOrder = Enum.SortOrder.LayoutOrder
+			Layout.Padding = UDim.new(0, 10)
+			Layout.Parent = Container
+			
+			local function CreateSubPage(name, widthRatio)
+				local SubPage = Elements.Template:Clone()
+				SubPage.Name = name
+				SubPage.Size = UDim2.new(widthRatio, -5, 1, 0)
+				SubPage.Visible = true
+				SubPage.Parent = Container
+				
+				-- Clear template elements
+				for _, child in ipairs(SubPage:GetChildren()) do
+					if child.ClassName == "Frame" and child.Name ~= "Placeholder" then
+						child:Destroy()
+					end
+				end
+				
+				local SubTab = {}
+				ApplyTabMethods(SubTab, SubPage)
+				return SubTab
+			end
+			
+			local Left = CreateSubPage("Left", ratio)
+			local Right = CreateSubPage("Right", 1 - ratio)
+			
+			return Left, Right
+		end
 
 		WithoniumRTY.Main:GetPropertyChangedSignal('BackgroundColor3'):Connect(function()
 			TabButton.UIStroke.Color = SelectedTheme.TabStroke
@@ -3356,11 +3443,6 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 				TabButton.Title.TextColor3 = SelectedTheme.TabTextColor
 			end
 		end)
-
-		function Tab:CreateColumn()
-			-- CreateColumn просто возвращает сам Tab для организации кода
-			-- Все элементы добавляются в один TabPage последовательно
-			return Tab
 		end
 
 		return Tab
