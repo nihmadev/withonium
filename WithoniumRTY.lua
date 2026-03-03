@@ -3490,7 +3490,6 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 				TabButton.Title.TextColor3 = SelectedTheme.TabTextColor
 			end
 		end)
-		end
 
 		return Tab
 	end
