@@ -3744,6 +3744,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 				SubPage.Size = UDim2.new(widthRatio, -5, 1, 0)
 				SubPage.Visible = true
 				SubPage.LayoutOrder = layoutOrder
+				SubPage.ClipsDescendants = false
 				SubPage.Parent = Container
 				
 				-- Clear template elements
@@ -3761,6 +3762,11 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 				SubLayout.SortOrder = Enum.SortOrder.LayoutOrder
 				SubLayout.Padding = UDim.new(0, 5)
 				SubLayout.Parent = SubPage
+				
+				-- Auto-update CanvasSize based on content
+				SubLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+					SubPage.CanvasSize = UDim2.new(0, 0, 0, SubLayout.AbsoluteContentSize.Y + 10)
+				end)
 				
 				local SubTab = {}
 				ApplyTabMethods(SubTab, SubPage)
