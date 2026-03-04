@@ -1065,6 +1065,12 @@ function GUI.Init(Settings, Utils, UnloadCallback, ConfigManager)
         Flag = "aimbotEnabled",
         Callback = function(Value) Settings.aimbotEnabled = Value end
     })
+    GUI.Elements.Toggles["teamCheckEnabled"] = AimbotTab:CreateToggle({
+        Name = "Team Check",
+        CurrentValue = Settings.teamCheckEnabled,
+        Flag = "teamCheckEnabled",
+        Callback = function(Value) Settings.teamCheckEnabled = Value end
+    })
     GUI.Elements.Toggles["silentAimEnabled"] = AimbotTab:CreateToggle({
         Name = "Silent Aim",
         CurrentValue = Settings.silentAimEnabled,
@@ -1770,6 +1776,7 @@ _modules["modules/Settings"] = function()
 local Settings = {
     
     aimbotEnabled = false,
+    teamCheckEnabled = true,
     visibleCheckEnabled = true,
     noRecoilEnabled = false,
     fastShootEnabled = false,
@@ -3297,7 +3304,14 @@ function Targeting.FindTarget(Settings, Utils, Aimbot)
     for i = 1, #allPlayers do
         local player = allPlayers[i]
         local character = Utils.getCharacter(player)
-        if player ~= LocalPlayer and character then
+        
+        
+        local isTeammate = false
+        if Settings.teamCheckEnabled and player.Team and LocalPlayer.Team then
+            isTeammate = (player.Team == LocalPlayer.Team)
+        end
+        
+        if player ~= LocalPlayer and character and not isTeammate then
             local humanoid = character:FindFirstChild("Humanoid")
             local targetObj = Utils.getBodyPart(character, Settings.targetPart)
             local rootPart = character:FindFirstChild("HumanoidRootPart")
