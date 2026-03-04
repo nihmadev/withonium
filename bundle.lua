@@ -659,21 +659,6 @@ function ESP.Update(Settings, deltaTime, Utils)
         local player = allPlayers[i]
         if player == LocalPlayer then continue end
         
-        
-        local isTeammate = false
-        if not Settings.espDrawTeammates and player.Team and LocalPlayer.Team then
-            isTeammate = (player.Team == LocalPlayer.Team)
-        end
-        
-        if isTeammate then
-            
-            Chams.Cleanup(player)
-            Labels.Cleanup(player)
-            Skeleton.Cleanup(player)
-            Healthbars.Cleanup(player)
-            continue
-        end
-        
         local character = Utils.getCharacter(player)
         local rootPart = character and (character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso") or character:FindFirstChild("Middle"))
         
@@ -704,6 +689,21 @@ function ESP.Update(Settings, deltaTime, Utils)
         local character = data.Character
         local rootPart = data.RootPart
         local distance = data.Distance
+        
+        
+        local isTeammate = false
+        if player and player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
+            isTeammate = true
+        end
+        
+        
+        if not Settings.espDrawTeammates and isTeammate then
+            Chams.Cleanup(player)
+            Labels.Cleanup(player)
+            Skeleton.Cleanup(player)
+            Healthbars.Cleanup(player)
+            continue
+        end
         
         if not rootPart or not character then 
             ESP.Remove(player)
