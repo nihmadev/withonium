@@ -3580,11 +3580,12 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 			Layout.Padding = UDim.new(0, 10)
 			Layout.Parent = Container
 			
-			local function CreateSubPage(name, widthRatio)
+			local function CreateSubPage(name, widthRatio, layoutOrder)
 				local SubPage = Elements.Template:Clone()
 				SubPage.Name = name
 				SubPage.Size = UDim2.new(widthRatio, -5, 1, 0)
 				SubPage.Visible = true
+				SubPage.LayoutOrder = layoutOrder
 				SubPage.Parent = Container
 				
 				-- Clear template elements
@@ -3608,18 +3609,19 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 				return SubTab
 			end
 			
-			local Left = CreateSubPage("Left", ratio)
+			local Left = CreateSubPage("Left", ratio, 1)
 			
-			local Right = CreateSubPage("Right", 1 - ratio)
-			
+			-- Separator between Left and Right
 			local Separator = Instance.new("Frame")
 			Separator.Name = "VerticalSeparator"
 			Separator.Size = UDim2.new(0, 1, 1, -10)
-			Separator.Position = UDim2.new(ratio, 0, 0, 5) -- Ставим точно между Left и Right
 			Separator.BackgroundColor3 = SelectedTheme.TextColor
 			Separator.BackgroundTransparency = 0.8
 			Separator.BorderSizePixel = 0
+			Separator.LayoutOrder = 2
 			Separator.Parent = Container
+			
+			local Right = CreateSubPage("Right", 1 - ratio, 3)
 			
 			WithoniumRTY.Main:GetPropertyChangedSignal('BackgroundColor3'):Connect(function()
 				Separator.BackgroundColor3 = SelectedTheme.TextColor

@@ -808,6 +808,17 @@ local function loadWithTimeout(url: string, timeout: number?): ...any
 end
 
 local function loadLibrary(): any
+    	
+	local success, result = pcall(function()
+		if isfile("WithoniumRTY.lua") then
+			local content = readfile("WithoniumRTY.lua")
+			local f, err = loadstring(content)
+			if f then return f() end
+			error(err)
+		end
+		error("No local file")
+	end)
+
 	local success, result = loadWithTimeout("https://raw.githubusercontent.com/nihmadev/Withonium/refs/heads/main/WithoniumRTY.lua")
 	if success and result then
 		return result
@@ -1494,14 +1505,7 @@ function GUI.Init(Settings, Utils, UnloadCallback, ConfigManager)
         Callback = function(Value) Settings.antiAfkInterval = Value end
     })
     local SettingsTab = GUI.Window:CreateTab("Settings", 7072721682)
-    local MainSettings, ConfigsSide = SettingsTab:Split(0.55)
-    
-    
-    local function getConfigsTable()
-        if not GUI.ConfigManager then return {} end
-        local configs = GUI.ConfigManager.List()
-        return type(configs) == "table" and configs or {}
-    end
+    local MainSettings, ConfigsSide = SettingsTab:Split(0.5)
 
     MainSettings:CreateSection("Config Creation")
     MainSettings:CreateInput({
@@ -1582,57 +1586,65 @@ function GUI.UpdateConfigList(ConfigsSide, Settings)
 
                 
                 if ConfigButton and ConfigButton.Element then
-                    local ButtonFrame = ConfigButton.Element
-                    
-                    local Controls = Instance.new("Frame")
-                    Controls.Name = "Controls"
-                    Controls.Size = UDim2.new(0, 60, 1, -6)
-                    Controls.Position = UDim2.new(1, -65, 0, 3)
-                    Controls.BackgroundTransparency = 1
-                    Controls.Parent = ButtonFrame
-                    
-                    local Layout = Instance.new("UIListLayout")
-                    Layout.FillDirection = Enum.FillDirection.Horizontal
-                    Layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-                    Layout.VerticalAlignment = Enum.VerticalAlignment.Center
-                    Layout.Padding = UDim.new(0, 4)
-                    Layout.Parent = Controls
+                    task.spawn(function()
+                        task.wait(0.05) 
+                        
+                        local ButtonFrame = ConfigButton.Element
+                        
+                        
+                        local oldControls = ButtonFrame:FindFirstChild("Controls")
+                        if oldControls then oldControls:Destroy() end
+                        
+                        local Controls = Instance.new("Frame")
+                        Controls.Name = "Controls"
+                        Controls.Size = UDim2.new(0, 60, 1, -6)
+                        Controls.Position = UDim2.new(1, -65, 0, 3)
+                        Controls.BackgroundTransparency = 1
+                        Controls.Parent = ButtonFrame
+                        
+                        local Layout = Instance.new("UIListLayout")
+                        Layout.FillDirection = Enum.FillDirection.Horizontal
+                        Layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+                        Layout.VerticalAlignment = Enum.VerticalAlignment.Center
+                        Layout.Padding = UDim.new(0, 4)
+                        Layout.Parent = Controls
 
-                    
-                    local function createIconButton(icon, color, callback)
-                        local btn = Instance.new("ImageButton")
-                        btn.Size = UDim2.new(0, 22, 0, 22)
-                        btn.BackgroundTransparency = 1
-                        btn.Image = "rbxassetid://" .. tostring(icon)
-                        btn.ImageColor3 = color
-                        btn.ZIndex = 10
-                        btn.Parent = Controls
-                        btn.MouseButton1Click:Connect(callback)
-                        return btn
-                    end
+                        
+                        local function createIconButton(icon, color, callback)
+                            local btn = Instance.new("ImageButton")
+                            btn.Size = UDim2.new(0, 22, 0, 22)
+                            btn.BackgroundTransparency = 1
+                            btn.Image = "rbxassetid://" .. tostring(icon)
+                            btn.ImageColor3 = color
+                            btn.ZIndex = 10
+                            btn.Parent = Controls
+                            btn.MouseButton1Click:Connect(callback)
+                            return btn
+                        end
 
-                    
-                    createIconButton(11311025700, Color3.fromRGB(100, 255, 100), function()
-                        GUI.ConfigManager.Load(name, Settings)
-                        GUI.UpdateToggles(Settings)
-                        GUI.Window:Notify({
-                            Title = "Config Loaded",
-                            Content = "Configuration " .. name .. " has been successfully loaded.",
-                            Duration = 5,
-                            Image = 4483362458
-                        })
-                    end)
+                        
+                        createIconButton(11311025700, Color3.fromRGB(100, 255, 100), function()
+                            GUI.ConfigManager.Load(name, Settings)
+                            GUI.UpdateToggles(Settings)
+                            GUI.Window:Notify({
+                                Title = "Config Loaded",
+                                Content = "Configuration " .. name .. " has been successfully loaded.",
+                                Duration = 5,
+                                Image = 4483362458
+                            })
+                        end)
 
-                    
-                    createIconButton(11311025587, Color3.fromRGB(255, 100, 100), function()
-                        GUI.ConfigManager.Delete(name)
-                        GUI.UpdateConfigList(ConfigsSide, Settings)
-                        GUI.Window:Notify({
-                            Title = "Config Deleted",
-                            Content = "Configuration " .. name .. " has been deleted.",
-                            Duration = 5,
-                            Image = 4483362458
-                        })
+                        
+                        createIconButton(11311025587, Color3.fromRGB(255, 100, 100), function()
+                            GUI.ConfigManager.Delete(name)
+                            GUI.UpdateConfigList(ConfigsSide, Settings)
+                            GUI.Window:Notify({
+                                Title = "Config Deleted",
+                                Content = "Configuration " .. name .. " has been deleted.",
+                                Duration = 5,
+                                Image = 4483362458
+                            })
+                        end)
                     end)
                 end
             end
