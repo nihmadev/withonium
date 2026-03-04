@@ -665,7 +665,14 @@ function ESP.Update(Settings, deltaTime, Utils)
             isTeammate = (player.Team == LocalPlayer.Team)
         end
         
-        if isTeammate then continue end
+        if isTeammate then
+            
+            Chams.Cleanup(player)
+            Labels.Cleanup(player)
+            Skeleton.Cleanup(player)
+            Healthbars.Cleanup(player)
+            continue
+        end
         
         local character = Utils.getCharacter(player)
         local rootPart = character and (character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso") or character:FindFirstChild("Middle"))
