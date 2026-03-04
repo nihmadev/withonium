@@ -1267,6 +1267,7 @@ local function Maximise()
 	
 	-- Плавное появление кнопки поиска
 	if Topbar:FindFirstChild('Search') then
+		Topbar.Search.Visible = true
 		TweenService:Create(Topbar.Search, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {ImageTransparency = 0.8}):Play()
 	end
 	
@@ -1500,7 +1501,11 @@ local function Minimise()
 
 	-- Плавное исчезновение кнопки поиска
 	if Topbar:FindFirstChild('Search') then
-		TweenService:Create(Topbar.Search, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {ImageTransparency = 1}):Play()
+		local searchTween = TweenService:Create(Topbar.Search, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {ImageTransparency = 1})
+		searchTween:Play()
+		searchTween.Completed:Connect(function()
+			Topbar.Search.Visible = false
+		end)
 	end
 
 	task.spawn(closeSearch)
