@@ -711,6 +711,37 @@ function ESP.Update(Settings, deltaTime, Utils)
                     isTeammate = false
                 end
             end
+            
+            
+            if not isTeammate and character and LocalPlayer.Character then
+                local playerTeamAttr = character:GetAttribute("Team") or character:GetAttribute("team") or character:GetAttribute("TeamID")
+                local localTeamAttr = LocalPlayer.Character:GetAttribute("Team") or LocalPlayer.Character:GetAttribute("team") or LocalPlayer.Character:GetAttribute("TeamID")
+                
+                if playerTeamAttr and localTeamAttr and playerTeamAttr == localTeamAttr then
+                    isTeammate = true
+                end
+            end
+            
+            
+            if not isTeammate and character and LocalPlayer.Character then
+                local function getMainColor(char)
+                    local torso = char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
+                    if torso and torso:IsA("BasePart") then
+                        return torso.Color
+                    end
+                    return nil
+                end
+                
+                local playerColor = getMainColor(character)
+                local localColor = getMainColor(LocalPlayer.Character)
+                
+                if playerColor and localColor then
+                    local colorDiff = (playerColor.R - localColor.R)^2 + (playerColor.G - localColor.G)^2 + (playerColor.B - localColor.B)^2
+                    if colorDiff < 0.01 then 
+                        isTeammate = true
+                    end
+                end
+            end
         end
         
         
@@ -3364,6 +3395,37 @@ function Targeting.FindTarget(Settings, Utils, Aimbot)
             if isTeammate and player.Neutral and LocalPlayer.Neutral then
                 if player.Neutral == true and LocalPlayer.Neutral == true then
                     isTeammate = false
+                end
+            end
+            
+            
+            if not isTeammate and character and LocalPlayer.Character then
+                local playerTeamAttr = character:GetAttribute("Team") or character:GetAttribute("team") or character:GetAttribute("TeamID")
+                local localTeamAttr = LocalPlayer.Character:GetAttribute("Team") or LocalPlayer.Character:GetAttribute("team") or LocalPlayer.Character:GetAttribute("TeamID")
+                
+                if playerTeamAttr and localTeamAttr and playerTeamAttr == localTeamAttr then
+                    isTeammate = true
+                end
+            end
+            
+            
+            if not isTeammate and character and LocalPlayer.Character then
+                local function getMainColor(char)
+                    local torso = char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
+                    if torso and torso:IsA("BasePart") then
+                        return torso.Color
+                    end
+                    return nil
+                end
+                
+                local playerColor = getMainColor(character)
+                local localColor = getMainColor(LocalPlayer.Character)
+                
+                if playerColor and localColor then
+                    local colorDiff = (playerColor.R - localColor.R)^2 + (playerColor.G - localColor.G)^2 + (playerColor.B - localColor.B)^2
+                    if colorDiff < 0.01 then 
+                        isTeammate = true
+                    end
                 end
             end
         end
