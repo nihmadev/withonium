@@ -658,6 +658,15 @@ function ESP.Update(Settings, deltaTime, Utils)
     for i = 1, #allPlayers do
         local player = allPlayers[i]
         if player == LocalPlayer then continue end
+        
+        
+        local isTeammate = false
+        if not Settings.espDrawTeammates and player.Team and LocalPlayer.Team then
+            isTeammate = (player.Team == LocalPlayer.Team)
+        end
+        
+        if isTeammate then continue end
+        
         local character = Utils.getCharacter(player)
         local rootPart = character and (character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso") or character:FindFirstChild("Middle"))
         
@@ -1261,6 +1270,12 @@ function GUI.Init(Settings, Utils, UnloadCallback, ConfigManager)
         Flag = "espEnabled",
         Callback = function(Value) Settings.espEnabled = Value end
     })
+    GUI.Elements.Toggles["espDrawTeammates"] = VisualsTab:CreateToggle({
+        Name = "Draw Teammates",
+        CurrentValue = Settings.espDrawTeammates,
+        Flag = "espDrawTeammates",
+        Callback = function(Value) Settings.espDrawTeammates = Value end
+    })
     VisualsTab:CreateSlider({
         Name = "Max Distance",
         Range = {0, 2000},
@@ -1845,6 +1860,7 @@ local Settings = {
     predictionIterations = 20, 
     hitscanVelocityThreshold = 800, 
     espEnabled = true,
+    espDrawTeammates = false,
     espHighlights = false,
     espSkeleton = false,
     espNames = true,
