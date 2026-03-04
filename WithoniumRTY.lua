@@ -3559,6 +3559,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 			Slider.Main.BackgroundColor3 = SelectedTheme.SliderBackground
 			Slider.Main.UIStroke.Color = SelectedTheme.SliderStroke
 			Slider.Main.Progress.UIStroke.Color = SelectedTheme.SliderStroke
+			Slider.Main.Progress.UIStroke.Transparency = 1
 			Slider.Main.Progress.BackgroundColor3 = SelectedTheme.SliderProgress
 
 			TweenService:Create(Slider, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
@@ -3592,7 +3593,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 			Slider.Main.Interact.InputEnded:Connect(function(Input) 
 				if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then 
 					TweenService:Create(Slider.Main.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 0.4}):Play()
-					TweenService:Create(Slider.Main.Progress.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 0.3}):Play()
+					TweenService:Create(Slider.Main.Progress.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 					SLDragging = false 
 				end 
 			end)
@@ -3704,6 +3705,7 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 				Slider.Main.BackgroundColor3 = SelectedTheme.SliderBackground
 				Slider.Main.UIStroke.Color = SelectedTheme.SliderStroke
 				Slider.Main.Progress.UIStroke.Color = SelectedTheme.SliderStroke
+				Slider.Main.Progress.UIStroke.Transparency = 1
 				Slider.Main.Progress.BackgroundColor3 = SelectedTheme.SliderProgress
 			end)
 
