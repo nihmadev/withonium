@@ -763,7 +763,9 @@ local function ChangeTheme(Theme)
 		for _, Element in ipairs(TabPage:GetChildren()) do
 			if Element.ClassName == "Frame" and Element.Name ~= "Placeholder" and Element.Name ~= "SectionSpacing" and Element.Name ~= "Divider" and Element.Name ~= "SectionTitle" and Element.Name ~= "SearchTitle-fsefsefesfsefesfesfThanks" then
 				Element.BackgroundColor3 = SelectedTheme.ElementBackground
-				Element.UIStroke.Color = SelectedTheme.ElementStroke
+				if Element:FindFirstChild("UIStroke") then
+					Element.UIStroke.Color = SelectedTheme.ElementStroke
+				end
 			end
 		end
 	end
