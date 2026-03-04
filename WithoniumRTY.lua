@@ -4003,10 +4003,18 @@ end
 for _, TopbarButton in ipairs(Topbar:GetChildren()) do
 	if TopbarButton.ClassName == "ImageButton" and TopbarButton.Name ~= 'Icon' then
 		TopbarButton.MouseEnter:Connect(function()
+			-- Не показываем кнопку Search если окно свернуто
+			if TopbarButton.Name == 'Search' and Minimised then
+				return
+			end
 			TweenService:Create(TopbarButton, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0}):Play()
 		end)
 
 		TopbarButton.MouseLeave:Connect(function()
+			-- Не показываем кнопку Search если окно свернуто
+			if TopbarButton.Name == 'Search' and Minimised then
+				return
+			end
 			TweenService:Create(TopbarButton, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0.8}):Play()
 		end)
 	end
