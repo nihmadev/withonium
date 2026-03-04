@@ -1571,100 +1571,70 @@ function GUI.UpdateConfigList(ConfigsSide, Settings)
         ConfigsSide:Clear()
     end
     
-    ConfigsSide:CreateSection("Configs")
+    ConfigsSide:CreateSection("Config Actions")
+    
+    
+    ConfigsSide:CreateButton({
+        Name = "Load Selected",
+        Callback = function()
+            if GUI.ConfigName and GUI.ConfigName ~= "" then
+                GUI.ConfigManager.Load(GUI.ConfigName, Settings)
+                GUI.UpdateToggles(Settings)
+                GUI.Window:Notify({
+                    Title = "Config Loaded",
+                    Content = "Configuration " .. GUI.ConfigName .. " has been successfully loaded.",
+                    Duration = 5,
+                    Image = 4483362458
+                })
+            else
+                GUI.Window:Notify({
+                    Title = "Error",
+                    Content = "Please select a config first.",
+                    Duration = 3,
+                    Image = 4483362458
+                })
+            end
+        end
+    })
+    
+    ConfigsSide:CreateButton({
+        Name = "Delete Selected",
+        Callback = function()
+            if GUI.ConfigName and GUI.ConfigName ~= "" then
+                local configToDelete = GUI.ConfigName
+                GUI.ConfigManager.Delete(configToDelete)
+                GUI.ConfigName = ""
+                GUI.UpdateConfigList(ConfigsSide, Settings)
+                GUI.Window:Notify({
+                    Title = "Config Deleted",
+                    Content = "Configuration " .. configToDelete .. " has been deleted.",
+                    Duration = 5,
+                    Image = 4483362458
+                })
+            else
+                GUI.Window:Notify({
+                    Title = "Error",
+                    Content = "Please select a config first.",
+                    Duration = 3,
+                    Image = 4483362458
+                })
+            end
+        end
+    })
+    
+    ConfigsSide:CreateSection("Available Configs")
     
     if GUI.ConfigManager then
         local configs = GUI.ConfigManager.List()
         if type(configs) == "table" then
             for _, name in pairs(configs) do    
                 local ConfigButton = ConfigsSide:CreateButton({
-                    Name = name,
+                    Name = (GUI.ConfigName == name and "► " or "") .. name,
                     Callback = function()
                         GUI.ConfigName = name
+                        GUI.UpdateConfigList(ConfigsSide, Settings)
                     end
                 })
-
-                
-                if ConfigButton and ConfigButton.Element then
-                    task.spawn(function()
-                        task.wait(0.1) 
-                        
-                        pcall(function()
-                            local ButtonFrame = ConfigButton.Element
-                            
-                            
-                            local oldControls = ButtonFrame:FindFirstChild("Controls")
-                            if oldControls then oldControls:Destroy() end
-                            
-                            
-                            local titleLabel = ButtonFrame:FindFirstChild("Title")
-                            if titleLabel then
-                                titleLabel.Size = UDim2.new(1, -80, 1, 0)
-                            end
-                            
-                            local Controls = Instance.new("Frame")
-                            Controls.Name = "Controls"
-                            Controls.Size = UDim2.new(0, 60, 1, -6)
-                            Controls.Position = UDim2.new(1, -65, 0, 3)
-                            Controls.BackgroundTransparency = 1
-                            Controls.ZIndex = 15
-                            Controls.Parent = ButtonFrame
-                            
-                            local Layout = Instance.new("UIListLayout")
-                            Layout.FillDirection = Enum.FillDirection.Horizontal
-                            Layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-                            Layout.VerticalAlignment = Enum.VerticalAlignment.Center
-                            Layout.Padding = UDim.new(0, 4)
-                            Layout.Parent = Controls
-
-                            
-                            local function createIconButton(icon, color, callback)
-                                local btn = Instance.new("ImageButton")
-                                btn.Size = UDim2.new(0, 20, 0, 20)
-                                btn.BackgroundTransparency = 1
-                                btn.Image = "rbxassetid://" .. tostring(icon)
-                                btn.ImageColor3 = color
-                                btn.ZIndex = 20
-                                btn.Parent = Controls
-                                
-                                
-                                btn.MouseEnter:Connect(function()
-                                    btn.ImageColor3 = Color3.fromRGB(255, 255, 255)
-                                end)
-                                btn.MouseLeave:Connect(function()
-                                    btn.ImageColor3 = color
-                                end)
-                                
-                                btn.MouseButton1Click:Connect(callback)
-                                return btn
-                            end
-
-                            
-                            createIconButton(11311025700, Color3.fromRGB(100, 255, 100), function()
-                                GUI.ConfigManager.Load(name, Settings)
-                                GUI.UpdateToggles(Settings)
-                                GUI.Window:Notify({
-                                    Title = "Config Loaded",
-                                    Content = "Configuration " .. name .. " has been successfully loaded.",
-                                    Duration = 5,
-                                    Image = 4483362458
-                                })
-                            end)
-
-                            
-                            createIconButton(11311025587, Color3.fromRGB(255, 100, 100), function()
-                                GUI.ConfigManager.Delete(name)
-                                GUI.UpdateConfigList(ConfigsSide, Settings)
-                                GUI.Window:Notify({
-                                    Title = "Config Deleted",
-                                    Content = "Configuration " .. name .. " has been deleted.",
-                                    Duration = 5,
-                                    Image = 4483362458
-                                })
-                            end)
-                        end)
-                    end)
-                end
             end
         end
     end
@@ -1779,7 +1749,7 @@ function GUI.UpdateKeybindList(Settings)
             local item = getOrCreateItem(bind.Name)
             item.NameLabel.Text = bind.Name
             item.StatusLabel.Text = string.format("[%s] [%s]", getKeyName(bind.Key), bind.Active and "Active" or "Disabled")
-            item.StatusLabel.TextColor3 = bind.Active and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(255, 50, 50)
+            item.StatusLabel.TextColor3 = bind.Active and Color3.fromRGB(220, 220, 220) or Color3.fromRGB(100, 100, 100)
             hasItems = true
         end
     end
