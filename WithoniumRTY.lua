@@ -1264,6 +1264,12 @@ local function Maximise()
 	TweenService:Create(dragBarCosmetic, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {BackgroundTransparency = 0.7}):Play()
 	TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Size = useMobileSizing and UDim2.new(0, 500, 0, 275) or UDim2.new(0, 500, 0, 475)}):Play()
 	TweenService:Create(Topbar, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Size = UDim2.new(0, 500, 0, 45)}):Play()
+	
+	-- Плавное появление кнопки поиска
+	if Topbar:FindFirstChild('Search') then
+		TweenService:Create(Topbar.Search, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {ImageTransparency = 0.8}):Play()
+	end
+	
 	TabList.Visible = true
 	task.wait(0.2)
 
@@ -1491,6 +1497,11 @@ local function Minimise()
 	Topbar.ChangeSize.Image = "rbxassetid://"..11036884234
 
 	Topbar.UIStroke.Color = SelectedTheme.ElementStroke
+
+	-- Плавное исчезновение кнопки поиска
+	if Topbar:FindFirstChild('Search') then
+		TweenService:Create(Topbar.Search, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {ImageTransparency = 1}):Play()
+	end
 
 	task.spawn(closeSearch)
 
