@@ -692,8 +692,25 @@ function ESP.Update(Settings, deltaTime, Utils)
         
         
         local isTeammate = false
-        if player and player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
-            isTeammate = true
+        if player and LocalPlayer then
+            
+            if player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
+                isTeammate = true
+            end
+            
+            
+            if not isTeammate and player.TeamColor and LocalPlayer.TeamColor then
+                if player.TeamColor == LocalPlayer.TeamColor then
+                    isTeammate = true
+                end
+            end
+            
+            
+            if isTeammate and player.Neutral and LocalPlayer.Neutral then
+                if player.Neutral == true and LocalPlayer.Neutral == true then
+                    isTeammate = false
+                end
+            end
         end
         
         
@@ -3330,8 +3347,25 @@ function Targeting.FindTarget(Settings, Utils, Aimbot)
         
         
         local isTeammate = false
-        if Settings.teamCheckEnabled and player.Team and LocalPlayer.Team then
-            isTeammate = (player.Team == LocalPlayer.Team)
+        if Settings.teamCheckEnabled then
+            
+            if player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
+                isTeammate = true
+            end
+            
+            
+            if not isTeammate and player.TeamColor and LocalPlayer.TeamColor then
+                if player.TeamColor == LocalPlayer.TeamColor then
+                    isTeammate = true
+                end
+            end
+            
+            
+            if isTeammate and player.Neutral and LocalPlayer.Neutral then
+                if player.Neutral == true and LocalPlayer.Neutral == true then
+                    isTeammate = false
+                end
+            end
         end
         
         if player ~= LocalPlayer and character and not isTeammate then
