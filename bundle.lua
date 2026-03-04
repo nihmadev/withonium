@@ -1515,8 +1515,6 @@ function GUI.Init(Settings, Utils, UnloadCallback, ConfigManager)
         Callback = function(Text) GUI.ConfigName = Text end
     })
     
-    local function UpdateConfigList()
-    end
     MainSettings:CreateButton({
          Name = "Save Current as New Config",
          Callback = function()
