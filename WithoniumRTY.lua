@@ -1194,7 +1194,28 @@ local function Hide(notify: boolean?)
 
 	for _, tab in ipairs(Elements:GetChildren()) do
 		if tab.Name ~= "Template" and tab.ClassName == "ScrollingFrame" and tab.Name ~= "Placeholder" then
-			for _, element in ipairs(tab:GetChildren()) do
+			-- Check if this tab has a SplitContainer (split layout)
+			local splitContainer = tab:FindFirstChild("SplitContainer")
+			local elementsToProcess = {}
+			
+			if splitContainer then
+				-- Process Left and Right sides separately
+				for _, side in ipairs(splitContainer:GetChildren()) do
+					if side:IsA("ScrollingFrame") then
+						for _, element in ipairs(side:GetChildren()) do
+							table.insert(elementsToProcess, element)
+						end
+					end
+				end
+			else
+				-- Normal tab without split
+				for _, element in ipairs(tab:GetChildren()) do
+					table.insert(elementsToProcess, element)
+				end
+			end
+			
+			-- Process all collected elements
+			for _, element in ipairs(elementsToProcess) do
 				if element.ClassName == "Frame" then
 					if element.Name ~= "SectionSpacing" and element.Name ~= "Placeholder" and element.Name ~= "VerticalSeparator" and element.Name ~= "SplitContainer" then
 						if element.Name == "SectionTitle" or element.Name == 'SearchTitle-fsefsefesfsefesfesfThanks' then
@@ -1216,7 +1237,9 @@ local function Hide(notify: boolean?)
 						end
 						for _, child in ipairs(element:GetChildren()) do
 							if child.ClassName == "Frame" or child.ClassName == "TextLabel" or child.ClassName == "TextBox" or child.ClassName == "ImageButton" or child.ClassName == "ImageLabel" then
-								child.Visible = false
+								if child.Name ~= "Controls" then
+									child.Visible = false
+								end
 							end
 						end
 					end
@@ -1248,7 +1271,28 @@ local function Maximise()
 
 	for _, tab in ipairs(Elements:GetChildren()) do
 		if tab.Name ~= "Template" and tab.ClassName == "ScrollingFrame" and tab.Name ~= "Placeholder" then
-			for _, element in ipairs(tab:GetChildren()) do
+			-- Check if this tab has a SplitContainer (split layout)
+			local splitContainer = tab:FindFirstChild("SplitContainer")
+			local elementsToProcess = {}
+			
+			if splitContainer then
+				-- Process Left and Right sides separately
+				for _, side in ipairs(splitContainer:GetChildren()) do
+					if side:IsA("ScrollingFrame") then
+						for _, element in ipairs(side:GetChildren()) do
+							table.insert(elementsToProcess, element)
+						end
+					end
+				end
+			else
+				-- Normal tab without split
+				for _, element in ipairs(tab:GetChildren()) do
+					table.insert(elementsToProcess, element)
+				end
+			end
+			
+			-- Process all collected elements
+			for _, element in ipairs(elementsToProcess) do
 				if element.ClassName == "Frame" then
 					if element.Name ~= "SectionSpacing" and element.Name ~= "Placeholder" and element.Name ~= "VerticalSeparator" and element.Name ~= "SplitContainer" then
 						if element.Name == "SectionTitle" or element.Name == 'SearchTitle-fsefsefesfsefesfesfThanks' then
@@ -1270,7 +1314,17 @@ local function Maximise()
 						end
 						for _, child in ipairs(element:GetChildren()) do
 							if child.ClassName == "Frame" or child.ClassName == "TextLabel" or child.ClassName == "TextBox" or child.ClassName == "ImageButton" or child.ClassName == "ImageLabel" then
-								child.Visible = true
+								if child.Name ~= "Controls" then
+									child.Visible = true
+								else
+									child.Visible = true
+									-- Make sure Controls and its children are visible
+									for _, controlChild in ipairs(child:GetChildren()) do
+										if controlChild:IsA("ImageButton") then
+											controlChild.Visible = true
+										end
+									end
+								end
 							end
 						end
 					end
@@ -1363,7 +1417,28 @@ local function Unhide()
 
 	for _, tab in ipairs(Elements:GetChildren()) do
 		if tab.Name ~= "Template" and tab.ClassName == "ScrollingFrame" and tab.Name ~= "Placeholder" then
-			for _, element in ipairs(tab:GetChildren()) do
+			-- Check if this tab has a SplitContainer (split layout)
+			local splitContainer = tab:FindFirstChild("SplitContainer")
+			local elementsToProcess = {}
+			
+			if splitContainer then
+				-- Process Left and Right sides separately
+				for _, side in ipairs(splitContainer:GetChildren()) do
+					if side:IsA("ScrollingFrame") then
+						for _, element in ipairs(side:GetChildren()) do
+							table.insert(elementsToProcess, element)
+						end
+					end
+				end
+			else
+				-- Normal tab without split
+				for _, element in ipairs(tab:GetChildren()) do
+					table.insert(elementsToProcess, element)
+				end
+			end
+			
+			-- Process all collected elements
+			for _, element in ipairs(elementsToProcess) do
 				if element.ClassName == "Frame" then
 					if element.Name ~= "SectionSpacing" and element.Name ~= "Placeholder" and element.Name ~= "VerticalSeparator" and element.Name ~= "SplitContainer" then
 						if element.Name == "SectionTitle" or element.Name == 'SearchTitle-fsefsefesfsefesfesfThanks' then
@@ -1385,7 +1460,17 @@ local function Unhide()
 						end
 						for _, child in ipairs(element:GetChildren()) do
 							if child.ClassName == "Frame" or child.ClassName == "TextLabel" or child.ClassName == "TextBox" or child.ClassName == "ImageButton" or child.ClassName == "ImageLabel" then
-								child.Visible = true
+								if child.Name ~= "Controls" then
+									child.Visible = true
+								else
+									child.Visible = true
+									-- Make sure Controls and its children are visible
+									for _, controlChild in ipairs(child:GetChildren()) do
+										if controlChild:IsA("ImageButton") then
+											controlChild.Visible = true
+										end
+									end
+								end
 							end
 						end
 					end
@@ -1420,7 +1505,28 @@ local function Minimise()
 
 	for _, tab in ipairs(Elements:GetChildren()) do
 		if tab.Name ~= "Template" and tab.ClassName == "ScrollingFrame" and tab.Name ~= "Placeholder" then
-			for _, element in ipairs(tab:GetChildren()) do
+			-- Check if this tab has a SplitContainer (split layout)
+			local splitContainer = tab:FindFirstChild("SplitContainer")
+			local elementsToProcess = {}
+			
+			if splitContainer then
+				-- Process Left and Right sides separately
+				for _, side in ipairs(splitContainer:GetChildren()) do
+					if side:IsA("ScrollingFrame") then
+						for _, element in ipairs(side:GetChildren()) do
+							table.insert(elementsToProcess, element)
+						end
+					end
+				end
+			else
+				-- Normal tab without split
+				for _, element in ipairs(tab:GetChildren()) do
+					table.insert(elementsToProcess, element)
+				end
+			end
+			
+			-- Process all collected elements
+			for _, element in ipairs(elementsToProcess) do
 				if element.ClassName == "Frame" then
 					if element.Name ~= "SectionSpacing" and element.Name ~= "Placeholder" and element.Name ~= "VerticalSeparator" and element.Name ~= "SplitContainer" then
 						if element.Name == "SectionTitle" or element.Name == 'SearchTitle-fsefsefesfsefesfesfThanks' then
@@ -1442,7 +1548,9 @@ local function Minimise()
 						end
 						for _, child in ipairs(element:GetChildren()) do
 							if child.ClassName == "Frame" or child.ClassName == "TextLabel" or child.ClassName == "TextBox" or child.ClassName == "ImageButton" or child.ClassName == "ImageLabel" then
-								child.Visible = false
+								if child.Name ~= "Controls" then
+									child.Visible = false
+								end
 							end
 						end
 					end
