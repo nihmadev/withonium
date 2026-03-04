@@ -3735,13 +3735,13 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 			local Layout = Instance.new("UIListLayout")
 			Layout.FillDirection = Enum.FillDirection.Horizontal
 			Layout.SortOrder = Enum.SortOrder.LayoutOrder
-			Layout.Padding = UDim.new(0, 10)
+			Layout.Padding = UDim.new(0, 8)
 			Layout.Parent = Container
 			
 			local function CreateSubPage(name, widthRatio, layoutOrder)
 				local SubPage = Elements.Template:Clone()
 				SubPage.Name = name
-				SubPage.Size = UDim2.new(widthRatio, -5, 1, 0)
+				SubPage.Size = UDim2.new(widthRatio, 0, 1, 0)
 				SubPage.Visible = true
 				SubPage.LayoutOrder = layoutOrder
 				SubPage.ClipsDescendants = false
@@ -3762,6 +3762,15 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 				SubLayout.SortOrder = Enum.SortOrder.LayoutOrder
 				SubLayout.Padding = UDim.new(0, 5)
 				SubLayout.Parent = SubPage
+				
+				-- Add padding to prevent clipping
+				local padding = SubPage:FindFirstChildOfClass("UIPadding")
+				if not padding then
+					padding = Instance.new("UIPadding")
+					padding.Parent = SubPage
+				end
+				padding.PaddingLeft = UDim.new(0, 2)
+				padding.PaddingRight = UDim.new(0, 2)
 				
 				-- Auto-update CanvasSize based on content
 				SubLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
@@ -3785,7 +3794,11 @@ function WithoniumRTYLibrary:CreateWindow(Settings)
 			Separator.LayoutOrder = 2
 			Separator.Parent = Container
 			
-			local Right = CreateSubPage("Right", 1 - ratio, 3)
+			-- Calculate right width: subtract left ratio, separator width, and padding
+			-- Total padding = 8px * 2 (between left-sep and sep-right) + 1px (separator) = 17px
+			-- We need to account for this in scale calculation
+			local rightRatio = 1 - ratio
+			local Right = CreateSubPage("Right", rightRatio, 3)
 			
 			WithoniumRTY.Main:GetPropertyChangedSignal('BackgroundColor3'):Connect(function()
 				Separator.BackgroundColor3 = SelectedTheme.TextColor
