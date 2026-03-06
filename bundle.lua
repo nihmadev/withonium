@@ -3081,26 +3081,34 @@ function Hooks.InitHooks(Aimbot, Settings, Utils, Ballistics)
 
     oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
         
-        if checkcaller() or insideHook then return oldNamecall(self, ...) end
+        if checkcaller() or insideHook or not self then
+            return oldNamecall(self, ...)
+        end
+        
         
         local method = getnamecallmethod()
-        local args = {...}
+        local isInstance = typeof(self) == "Instance"
+        
+        
+        if not isInstance or type(method) ~= "string" then
+            return oldNamecall(self, ...)
+        end
         
         
         if method == "GetState" and Settings.jumpShotEnabled then
-            if self == currentHumanoid then
+            if self == currentHumanoid and self.Parent then
                 return Enum.HumanoidStateType.Landed
             end
         end
 
         
-        
-        
         if Settings.silentAimEnabled and (Aimbot.IsAiming or Settings.aimKeyMode == "Always") then
             local target = Aimbot.SilentTarget
-            if target and target.targetPart then
+            if target and target.targetPart and target.targetPart.Parent then
+                local args = {...}
                 
-                local now = tick()
+                
+                local now = os.clock()
                 if now - lastWeaponCheck > 0.1 then
                     lastWeaponCheck = now
                     insideHook = true
@@ -3121,24 +3129,15 @@ function Hooks.InitHooks(Aimbot, Settings, Utils, Ballistics)
                     
                     if method == "Raycast" and self == workspace then
                         local origin = args[1]
-                        
-                        
                         if typeof(origin) == "Vector3" and cam and (origin - cam.CFrame.Position).Magnitude < 50 then
-                            
                             local predictedDir = Aimbot.GetProjectilePrediction(target, Settings, Ballistics, origin)
-                            
-                            
-                            
                             local dist = (target.targetPart.Position - origin).Magnitude
-                            local rayDist = dist * 1.5 
+                            local rayDist = dist * 1.5
                             local direction = predictedDir * rayDist
                             
-                            
                             if Settings.magicBulletEnabled then
-                                
                                 local targetChar = Utils.getCharacter(target.player)
                                 if targetChar then
-                                    
                                     sharedRaycastParams.FilterDescendantsInstances = {targetChar}
                                     return oldNamecall(self, origin, direction, sharedRaycastParams)
                                 end
@@ -3150,29 +3149,19 @@ function Hooks.InitHooks(Aimbot, Settings, Utils, Ballistics)
                     
                     elseif (method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList" or method == "FindPartOnRayWithWhiteList") and self == workspace then
                         local ray = args[1]
-                        
                         if typeof(ray) == "Ray" and cam and (ray.Origin - cam.CFrame.Position).Magnitude < 50 then
-                            
                             local predictedDir = Aimbot.GetProjectilePrediction(target, Settings, Ballistics, ray.Origin)
                             local dist = (target.targetPart.Position - ray.Origin).Magnitude
-                            local rayDist = dist * 1.5 
+                            local rayDist = dist * 1.5
                             local newRay = Ray.new(ray.Origin, predictedDir * rayDist)
                             
                             
-                            local hitPos = target.targetPart.Position
-                            
-                            
                             if Settings.magicBulletEnabled then
+                                local hitPos = target.targetPart.Position
                                 return target.targetPart, hitPos, Vector3.new(0, 1, 0), target.targetPart.Material
                             end
                             
-                            if method == "FindPartOnRay" then
-                                return oldNamecall(self, newRay, args[2], args[3], args[4])
-                            elseif method == "FindPartOnRayWithIgnoreList" then
-                                return oldNamecall(self, newRay, args[2], args[3], args[4])
-                            elseif method == "FindPartOnRayWithWhiteList" then
-                                return oldNamecall(self, newRay, args[2], args[3], args[4])
-                            end
+                            return oldNamecall(self, newRay, args[2], args[3], args[4])
                         end
                     end
                 end
