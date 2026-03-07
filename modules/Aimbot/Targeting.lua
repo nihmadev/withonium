@@ -205,26 +205,44 @@ function Targeting.FindTarget(Settings, Utils, Aimbot)
                                 end
                                 
                                 -- Stabilize velocity for prediction (mix with MoveDirection if possible)
-                                local targetVel = rootPart.Velocity
-                                if humanoid.MoveDirection.Magnitude > 0 then
+                                local rawVel = rootPart.Velocity
+                                local targetVel = rawVel
+                                
+                                -- 1. Use MoveDirection for much more stable XZ velocity
+                                if humanoid.MoveDirection.Magnitude > 0.01 then
                                     local moveDir = humanoid.MoveDirection
-                                    local speed = humanoid.WalkSpeed
-                                    -- Use MoveDirection for XZ, keep Velocity for Y
-                                    -- Suppression of small Y jitter to prevent jitter on slopes/stairs
-                                    local yVel = targetVel.Y
-                                    if math.abs(yVel) < 2.0 and not isFalling then
+                                    local speed = humanoid.WalkSpeed or 16
+                                    
+                                    -- 2. Suppression of small Y jitter to prevent jitter on slopes/stairs
+                                    local yVel = rawVel.Y
+                                    if math.abs(yVel) < 3.5 and not isFalling then
                                         yVel = 0
                                     end
                                     targetVel = Vector3.new(moveDir.X * speed, yVel, moveDir.Z * speed)
+                                else
+                                    -- If standing still or not using MoveDirection, stabilize raw velocity
+                                    local vx = (math.abs(rawVel.X) < 1.0) and 0 or rawVel.X
+                                    local vy = (math.abs(rawVel.Y) < 3.5 and not isFalling) and 0 or rawVel.Y
+                                    local vz = (math.abs(rawVel.Z) < 1.0) and 0 or rawVel.Z
+                                    targetVel = Vector3.new(vx, vy, vz)
+                                end
+                                
+                                -- 3. Final smoothing for target velocity
+                                if Aimbot and Aimbot.CurrentTarget and Aimbot.CurrentTarget.player == player then
+                                    local lastVel = Aimbot.CurrentTarget.velocity
+                                    if lastVel then
+                                        targetVel = lastVel:Lerp(targetVel, 0.4) -- Smooth transition
+                                    end
                                 end
 
                                 -- Stable freefalling state to prevent vertical jitter
                                 local stableFalling = isFalling
                                 if Aimbot and Aimbot.CurrentTarget and Aimbot.CurrentTarget.player == player then
                                     -- If target was falling last frame, we require more evidence to say they stopped
-                                    -- (Prevents jitter on small bumps)
+                                    -- (Prevents jitter on small bumps/slopes)
                                     if Aimbot.CurrentTarget.isFreefalling and not isFalling then
-                                        if math.abs(rootPart.Velocity.Y) > 0.5 then
+                                        -- If they still have significant downward velocity, keep treating them as falling
+                                        if rawVel.Y < -5.0 then
                                             stableFalling = true
                                         end
                                     end
@@ -235,6 +253,7 @@ function Targeting.FindTarget(Settings, Utils, Aimbot)
                                     targetPart = bestPart,
                                     rootPart = rootPart,
                                     velocity = targetVel,
+                                    rawVelocity = rawVel, -- Keep raw for debugging/advanced use
                                     lastPosition = bestPart.Position,
                                     distance = screenDistance,
                                     worldDistance = worldDistance,

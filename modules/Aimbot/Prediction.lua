@@ -7,20 +7,7 @@ function Prediction.GetProjectilePrediction(target, Settings, Ballistics, custom
     local targetPos = target.targetPart.Position
     local targetVelocity = target.velocity or Vector3.new(0, 0, 0)
     
-    -- Продвинутое предсказание на основе MoveDirection (нажатий клавиш)
-    if target.player and target.player.Character then
-        local humanoid = target.player.Character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            local moveDir = humanoid.MoveDirection
-            if moveDir.Magnitude > 0.1 then
-                -- Если враг движется, используем MoveDirection вместо чистой Velocity,
-                -- так как Velocity может быть нестабильной из-за пинга или физики.
-                -- Мы комбинируем MoveDirection с текущей скоростью для точности.
-                local walkSpeed = humanoid.WalkSpeed or 16
-                targetVelocity = Vector3.new(moveDir.X * walkSpeed, targetVelocity.Y, moveDir.Z * walkSpeed)
-            end
-        end
-    end
+    -- Removed duplicate velocity logic. Targeting.lua already handles stable velocity.
     
     local v = Settings.projectileSpeed or 1000
     local g = Settings.projectileGravity or 196.2
@@ -65,9 +52,11 @@ function Prediction.GetProjectilePrediction(target, Settings, Ballistics, custom
             lead = lead.Unit * maxLead
         end
         
+        -- Target movement prediction (Softened to prevent snap)
         local targetFall = Vector3.new(0, 0, 0)
         if target.isFreefalling then
-            targetFall = Vector3.new(0, 0.5 * targetG * (t * t), 0)
+            -- Use a slightly lower gravity for target prediction to be conservative
+            targetFall = Vector3.new(0, 0.4 * targetG * (t * t), 0)
         end
         
         local aimPoint = targetPos + lead - targetFall
@@ -85,23 +74,22 @@ function Prediction.GetProjectilePrediction(target, Settings, Ballistics, custom
         local lead = targetVelocity * t * pFactor
         
         -- Stabilize lead
-        local maxLead = dist * 0.5
+        local maxLead = dist * 0.8 -- Slightly more lead allowed for projectiles
         if lead.Magnitude > maxLead then
             lead = lead.Unit * maxLead
         end
         
-        -- Target movement prediction
+        -- Target movement prediction (Softened)
         local targetFall = Vector3.new(0, 0, 0)
         if target.isFreefalling then
-            targetFall = Vector3.new(0, 0.5 * targetG * (t * t), 0)
+            targetFall = Vector3.new(0, 0.4 * targetG * (t * t), 0)
         end
         
         -- Bullet drop compensation
         local dropComp = g * 0.5 * (t * t)
         
         -- CRITICAL FIX: Limit bullet drop compensation to prevent "320 degrees up" jump
-        -- Compensation should never be more than the distance to target unless sniping at extreme ranges
-        local maxDropComp = dist * 1.5 
+        local maxDropComp = dist * 1.2 
         dropComp = math.min(dropComp, maxDropComp)
         
         local dropVec = Vector3.new(0, dropComp, 0)

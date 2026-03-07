@@ -33,6 +33,10 @@ local Aimbot = {
     -- Smooth Prediction Properties
     LastPredictedDir = nil,
     PredictionSmoothing = 0.2, -- Чем меньше, тем плавнее (0.1 - 0.5)
+    
+    -- Velocity Averaging
+    VelocityHistory = {},
+    MaxHistorySize = 5,
 }
 
 -- Initialize FOV Circle
@@ -154,18 +158,43 @@ function Aimbot.Update(deltaTime, Settings, Utils, Ballistics, ESP)
     if shouldAim then
         local target = currentFrameTarget
         if target and target.targetPart then
-            -- Reset smoothing if target changed
+            -- Reset smoothing and history if target changed
             if Aimbot.CurrentTarget and Aimbot.CurrentTarget.player ~= target.player then
                 Aimbot.LastPredictedDir = nil
+                Aimbot.VelocityHistory = {}
             end
+            
+            -- Velocity Averaging: Reduces jitter from physics noise
+            table.insert(Aimbot.VelocityHistory, target.velocity)
+            if #Aimbot.VelocityHistory > (Aimbot.MaxHistorySize or 5) then
+                table.remove(Aimbot.VelocityHistory, 1)
+            end
+            
+            local avgVelocity = Vector3.new(0, 0, 0)
+            for _, v in ipairs(Aimbot.VelocityHistory) do
+                avgVelocity = avgVelocity + v
+            end
+            avgVelocity = avgVelocity / #Aimbot.VelocityHistory
+            
+            -- Temporarily override target velocity with averaged one
+            local originalVelocity = target.velocity
+            target.velocity = avgVelocity
             
             Aimbot.CurrentTarget = target
             Aimbot.IsAiming = true
             
-            -- Keep Camera as Custom to allow standard movement scripts to work.
-            -- We override its CFrame in RenderStep (Main.lua) with priority +1.
+            -- Use a much more stable origin (HumanoidRootPart is better than Head/Camera for prediction)
+             local character = LocalPlayer.Character
+             local origin = camera.CFrame.Position
+             if character and character:FindFirstChild("HumanoidRootPart") then
+                 -- Stable origin: RootPart position + standard offset for eyes
+                 origin = character.HumanoidRootPart.Position + Vector3.new(0, 1.5, 0)
+             end
+ 
+             local predictedDir = Aimbot.GetProjectilePrediction(target, Settings, Ballistics, origin)
             
-            local predictedDir = Aimbot.GetProjectilePrediction(target, Settings, Ballistics)
+            -- Restore original velocity just in case
+            target.velocity = originalVelocity
             
             -- Smooth Prediction: Prevents jitter when target is moving erratically
             local pSmoothing = Settings.predictionSmoothing or 0.2
@@ -174,7 +203,7 @@ function Aimbot.Update(deltaTime, Settings, Utils, Ballistics, ESP)
             end
             Aimbot.LastPredictedDir = predictedDir
             
-            Aimbot.TargetPosition = camera.CFrame.Position + (predictedDir * 10)
+            Aimbot.TargetPosition = origin + (predictedDir * 10)
             
             local currentCFrame = camera.CFrame
             -- Safety check for lookAt to prevent "spinning" when looking straight up/down
@@ -189,7 +218,9 @@ function Aimbot.Update(deltaTime, Settings, Utils, Ballistics, ESP)
             local smoothnessFactor = Settings.smoothness or 0.5
             -- Limit deltaTime to prevent huge jumps after lag spikes
             local safeDeltaTime = math.min(deltaTime, 0.1)
-            local alpha = math.clamp(safeDeltaTime * (smoothnessFactor * 250), 0, 1)
+            
+            -- Adjust alpha to be more responsive but still smooth
+            local alpha = math.clamp(safeDeltaTime * (smoothnessFactor * 120), 0, 1)
             
             if smoothnessFactor < 1 then
                 camera.CFrame = currentCFrame:Lerp(targetCFrame, alpha)
@@ -201,7 +232,8 @@ function Aimbot.Update(deltaTime, Settings, Utils, Ballistics, ESP)
             Aimbot.CurrentTarget = nil
             Aimbot.IsAiming = false
             Aimbot.TargetPosition = nil
-            Aimbot.LastPredictedDir = nil -- Reset smoothing when no target
+            Aimbot.LastPredictedDir = nil
+            Aimbot.VelocityHistory = {} -- Clear history
         end
     else
         -- Reset state when aiming stops
@@ -209,6 +241,7 @@ function Aimbot.Update(deltaTime, Settings, Utils, Ballistics, ESP)
         Aimbot.IsAiming = false
         Aimbot.TargetPosition = nil
         Aimbot.LastPredictedDir = nil -- Reset smoothing when not aiming
+        Aimbot.VelocityHistory = {}
     end
 
     Aimbot.ApplyNoRecoil(Settings)

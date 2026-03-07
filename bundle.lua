@@ -48,6 +48,10 @@ local Aimbot = {
     
     LastPredictedDir = nil,
     PredictionSmoothing = 0.2, 
+    
+    
+    VelocityHistory = {},
+    MaxHistorySize = 5,
 }
 
 
@@ -172,15 +176,40 @@ function Aimbot.Update(deltaTime, Settings, Utils, Ballistics, ESP)
             
             if Aimbot.CurrentTarget and Aimbot.CurrentTarget.player ~= target.player then
                 Aimbot.LastPredictedDir = nil
+                Aimbot.VelocityHistory = {}
             end
+            
+            
+            table.insert(Aimbot.VelocityHistory, target.velocity)
+            if #Aimbot.VelocityHistory > (Aimbot.MaxHistorySize or 5) then
+                table.remove(Aimbot.VelocityHistory, 1)
+            end
+            
+            local avgVelocity = Vector3.new(0, 0, 0)
+            for _, v in ipairs(Aimbot.VelocityHistory) do
+                avgVelocity = avgVelocity + v
+            end
+            avgVelocity = avgVelocity / #Aimbot.VelocityHistory
+            
+            
+            local originalVelocity = target.velocity
+            target.velocity = avgVelocity
             
             Aimbot.CurrentTarget = target
             Aimbot.IsAiming = true
             
             
+             local character = LocalPlayer.Character
+             local origin = camera.CFrame.Position
+             if character and character:FindFirstChild("HumanoidRootPart") then
+                 
+                 origin = character.HumanoidRootPart.Position + Vector3.new(0, 1.5, 0)
+             end
+ 
+             local predictedDir = Aimbot.GetProjectilePrediction(target, Settings, Ballistics, origin)
             
             
-            local predictedDir = Aimbot.GetProjectilePrediction(target, Settings, Ballistics)
+            target.velocity = originalVelocity
             
             
             local pSmoothing = Settings.predictionSmoothing or 0.2
@@ -189,7 +218,7 @@ function Aimbot.Update(deltaTime, Settings, Utils, Ballistics, ESP)
             end
             Aimbot.LastPredictedDir = predictedDir
             
-            Aimbot.TargetPosition = camera.CFrame.Position + (predictedDir * 10)
+            Aimbot.TargetPosition = origin + (predictedDir * 10)
             
             local currentCFrame = camera.CFrame
             
@@ -204,7 +233,9 @@ function Aimbot.Update(deltaTime, Settings, Utils, Ballistics, ESP)
             local smoothnessFactor = Settings.smoothness or 0.5
             
             local safeDeltaTime = math.min(deltaTime, 0.1)
-            local alpha = math.clamp(safeDeltaTime * (smoothnessFactor * 250), 0, 1)
+            
+            
+            local alpha = math.clamp(safeDeltaTime * (smoothnessFactor * 120), 0, 1)
             
             if smoothnessFactor < 1 then
                 camera.CFrame = currentCFrame:Lerp(targetCFrame, alpha)
@@ -216,7 +247,8 @@ function Aimbot.Update(deltaTime, Settings, Utils, Ballistics, ESP)
             Aimbot.CurrentTarget = nil
             Aimbot.IsAiming = false
             Aimbot.TargetPosition = nil
-            Aimbot.LastPredictedDir = nil 
+            Aimbot.LastPredictedDir = nil
+            Aimbot.VelocityHistory = {} 
         end
     else
         
@@ -224,6 +256,7 @@ function Aimbot.Update(deltaTime, Settings, Utils, Ballistics, ESP)
         Aimbot.IsAiming = false
         Aimbot.TargetPosition = nil
         Aimbot.LastPredictedDir = nil 
+        Aimbot.VelocityHistory = {}
     end
 
     Aimbot.ApplyNoRecoil(Settings)
@@ -3212,19 +3245,6 @@ function Prediction.GetProjectilePrediction(target, Settings, Ballistics, custom
     local targetVelocity = target.velocity or Vector3.new(0, 0, 0)
     
     
-    if target.player and target.player.Character then
-        local humanoid = target.player.Character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            local moveDir = humanoid.MoveDirection
-            if moveDir.Magnitude > 0.1 then
-                
-                
-                
-                local walkSpeed = humanoid.WalkSpeed or 16
-                targetVelocity = Vector3.new(moveDir.X * walkSpeed, targetVelocity.Y, moveDir.Z * walkSpeed)
-            end
-        end
-    end
     
     local v = Settings.projectileSpeed or 1000
     local g = Settings.projectileGravity or 196.2
@@ -3269,9 +3289,11 @@ function Prediction.GetProjectilePrediction(target, Settings, Ballistics, custom
             lead = lead.Unit * maxLead
         end
         
+        
         local targetFall = Vector3.new(0, 0, 0)
         if target.isFreefalling then
-            targetFall = Vector3.new(0, 0.5 * targetG * (t * t), 0)
+            
+            targetFall = Vector3.new(0, 0.4 * targetG * (t * t), 0)
         end
         
         local aimPoint = targetPos + lead - targetFall
@@ -3289,7 +3311,7 @@ function Prediction.GetProjectilePrediction(target, Settings, Ballistics, custom
         local lead = targetVelocity * t * pFactor
         
         
-        local maxLead = dist * 0.5
+        local maxLead = dist * 0.8 
         if lead.Magnitude > maxLead then
             lead = lead.Unit * maxLead
         end
@@ -3297,15 +3319,14 @@ function Prediction.GetProjectilePrediction(target, Settings, Ballistics, custom
         
         local targetFall = Vector3.new(0, 0, 0)
         if target.isFreefalling then
-            targetFall = Vector3.new(0, 0.5 * targetG * (t * t), 0)
+            targetFall = Vector3.new(0, 0.4 * targetG * (t * t), 0)
         end
         
         
         local dropComp = g * 0.5 * (t * t)
         
         
-        
-        local maxDropComp = dist * 1.5 
+        local maxDropComp = dist * 1.2 
         dropComp = math.min(dropComp, maxDropComp)
         
         local dropVec = Vector3.new(0, dropComp, 0)
@@ -3554,17 +3575,34 @@ function Targeting.FindTarget(Settings, Utils, Aimbot)
                                 end
                                 
                                 
-                                local targetVel = rootPart.Velocity
-                                if humanoid.MoveDirection.Magnitude > 0 then
+                                local rawVel = rootPart.Velocity
+                                local targetVel = rawVel
+                                
+                                
+                                if humanoid.MoveDirection.Magnitude > 0.01 then
                                     local moveDir = humanoid.MoveDirection
-                                    local speed = humanoid.WalkSpeed
+                                    local speed = humanoid.WalkSpeed or 16
                                     
                                     
-                                    local yVel = targetVel.Y
-                                    if math.abs(yVel) < 2.0 and not isFalling then
+                                    local yVel = rawVel.Y
+                                    if math.abs(yVel) < 3.5 and not isFalling then
                                         yVel = 0
                                     end
                                     targetVel = Vector3.new(moveDir.X * speed, yVel, moveDir.Z * speed)
+                                else
+                                    
+                                    local vx = (math.abs(rawVel.X) < 1.0) and 0 or rawVel.X
+                                    local vy = (math.abs(rawVel.Y) < 3.5 and not isFalling) and 0 or rawVel.Y
+                                    local vz = (math.abs(rawVel.Z) < 1.0) and 0 or rawVel.Z
+                                    targetVel = Vector3.new(vx, vy, vz)
+                                end
+                                
+                                
+                                if Aimbot and Aimbot.CurrentTarget and Aimbot.CurrentTarget.player == player then
+                                    local lastVel = Aimbot.CurrentTarget.velocity
+                                    if lastVel then
+                                        targetVel = lastVel:Lerp(targetVel, 0.4) 
+                                    end
                                 end
 
                                 
@@ -3573,7 +3611,8 @@ function Targeting.FindTarget(Settings, Utils, Aimbot)
                                     
                                     
                                     if Aimbot.CurrentTarget.isFreefalling and not isFalling then
-                                        if math.abs(rootPart.Velocity.Y) > 0.5 then
+                                        
+                                        if rawVel.Y < -5.0 then
                                             stableFalling = true
                                         end
                                     end
@@ -3584,6 +3623,7 @@ function Targeting.FindTarget(Settings, Utils, Aimbot)
                                     targetPart = bestPart,
                                     rootPart = rootPart,
                                     velocity = targetVel,
+                                    rawVelocity = rawVel, 
                                     lastPosition = bestPart.Position,
                                     distance = screenDistance,
                                     worldDistance = worldDistance,
