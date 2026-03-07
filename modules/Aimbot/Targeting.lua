@@ -188,6 +188,12 @@ function Targeting.FindTarget(Settings, Utils, Aimbot)
                                 score = worldDistance * (1 + (screenDistance / (Settings.fovSize or 90)))
                             end
 
+                            -- Sticky Target: if we're already aiming at this person, give them a score bonus
+                            -- to prevent switching to someone else unless they're much closer/better.
+                            if Aimbot and Aimbot.CurrentTarget and Aimbot.CurrentTarget.player == player then
+                                score = score * 0.6 -- 40% priority bonus for current target
+                            end
+
                             if score < bestScore then
                                 bestScore = score
                                 local humanoidState = humanoid:GetState()
@@ -204,7 +210,24 @@ function Targeting.FindTarget(Settings, Utils, Aimbot)
                                     local moveDir = humanoid.MoveDirection
                                     local speed = humanoid.WalkSpeed
                                     -- Use MoveDirection for XZ, keep Velocity for Y
-                                    targetVel = Vector3.new(moveDir.X * speed, targetVel.Y, moveDir.Z * speed)
+                                    -- Suppression of small Y jitter to prevent jitter on slopes/stairs
+                                    local yVel = targetVel.Y
+                                    if math.abs(yVel) < 2.0 and not isFalling then
+                                        yVel = 0
+                                    end
+                                    targetVel = Vector3.new(moveDir.X * speed, yVel, moveDir.Z * speed)
+                                end
+
+                                -- Stable freefalling state to prevent vertical jitter
+                                local stableFalling = isFalling
+                                if Aimbot and Aimbot.CurrentTarget and Aimbot.CurrentTarget.player == player then
+                                    -- If target was falling last frame, we require more evidence to say they stopped
+                                    -- (Prevents jitter on small bumps)
+                                    if Aimbot.CurrentTarget.isFreefalling and not isFalling then
+                                        if math.abs(rootPart.Velocity.Y) > 0.5 then
+                                            stableFalling = true
+                                        end
+                                    end
                                 end
 
                                 bestTarget = {
@@ -215,7 +238,7 @@ function Targeting.FindTarget(Settings, Utils, Aimbot)
                                     lastPosition = bestPart.Position,
                                     distance = screenDistance,
                                     worldDistance = worldDistance,
-                                    isFreefalling = isFalling,
+                                    isFreefalling = stableFalling,
                                     isVisible = isVisible -- Store visibility for Hooks
                                 }
                             end

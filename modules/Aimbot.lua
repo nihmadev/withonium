@@ -154,6 +154,11 @@ function Aimbot.Update(deltaTime, Settings, Utils, Ballistics, ESP)
     if shouldAim then
         local target = currentFrameTarget
         if target and target.targetPart then
+            -- Reset smoothing if target changed
+            if Aimbot.CurrentTarget and Aimbot.CurrentTarget.player ~= target.player then
+                Aimbot.LastPredictedDir = nil
+            end
+            
             Aimbot.CurrentTarget = target
             Aimbot.IsAiming = true
             
@@ -161,6 +166,14 @@ function Aimbot.Update(deltaTime, Settings, Utils, Ballistics, ESP)
             -- We override its CFrame in RenderStep (Main.lua) with priority +1.
             
             local predictedDir = Aimbot.GetProjectilePrediction(target, Settings, Ballistics)
+            
+            -- Smooth Prediction: Prevents jitter when target is moving erratically
+            local pSmoothing = Settings.predictionSmoothing or 0.2
+            if Aimbot.LastPredictedDir and pSmoothing > 0 then
+                predictedDir = Aimbot.LastPredictedDir:Lerp(predictedDir, math.clamp(1 - pSmoothing, 0.01, 1))
+            end
+            Aimbot.LastPredictedDir = predictedDir
+            
             Aimbot.TargetPosition = camera.CFrame.Position + (predictedDir * 10)
             
             local currentCFrame = camera.CFrame

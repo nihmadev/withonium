@@ -169,6 +169,11 @@ function Aimbot.Update(deltaTime, Settings, Utils, Ballistics, ESP)
     if shouldAim then
         local target = currentFrameTarget
         if target and target.targetPart then
+            
+            if Aimbot.CurrentTarget and Aimbot.CurrentTarget.player ~= target.player then
+                Aimbot.LastPredictedDir = nil
+            end
+            
             Aimbot.CurrentTarget = target
             Aimbot.IsAiming = true
             
@@ -176,6 +181,14 @@ function Aimbot.Update(deltaTime, Settings, Utils, Ballistics, ESP)
             
             
             local predictedDir = Aimbot.GetProjectilePrediction(target, Settings, Ballistics)
+            
+            
+            local pSmoothing = Settings.predictionSmoothing or 0.2
+            if Aimbot.LastPredictedDir and pSmoothing > 0 then
+                predictedDir = Aimbot.LastPredictedDir:Lerp(predictedDir, math.clamp(1 - pSmoothing, 0.01, 1))
+            end
+            Aimbot.LastPredictedDir = predictedDir
+            
             Aimbot.TargetPosition = camera.CFrame.Position + (predictedDir * 10)
             
             local currentCFrame = camera.CFrame
@@ -3524,6 +3537,12 @@ function Targeting.FindTarget(Settings, Utils, Aimbot)
                                 score = worldDistance * (1 + (screenDistance / (Settings.fovSize or 90)))
                             end
 
+                            
+                            
+                            if Aimbot and Aimbot.CurrentTarget and Aimbot.CurrentTarget.player == player then
+                                score = score * 0.6 
+                            end
+
                             if score < bestScore then
                                 bestScore = score
                                 local humanoidState = humanoid:GetState()
@@ -3540,7 +3559,24 @@ function Targeting.FindTarget(Settings, Utils, Aimbot)
                                     local moveDir = humanoid.MoveDirection
                                     local speed = humanoid.WalkSpeed
                                     
-                                    targetVel = Vector3.new(moveDir.X * speed, targetVel.Y, moveDir.Z * speed)
+                                    
+                                    local yVel = targetVel.Y
+                                    if math.abs(yVel) < 2.0 and not isFalling then
+                                        yVel = 0
+                                    end
+                                    targetVel = Vector3.new(moveDir.X * speed, yVel, moveDir.Z * speed)
+                                end
+
+                                
+                                local stableFalling = isFalling
+                                if Aimbot and Aimbot.CurrentTarget and Aimbot.CurrentTarget.player == player then
+                                    
+                                    
+                                    if Aimbot.CurrentTarget.isFreefalling and not isFalling then
+                                        if math.abs(rootPart.Velocity.Y) > 0.5 then
+                                            stableFalling = true
+                                        end
+                                    end
                                 end
 
                                 bestTarget = {
@@ -3551,7 +3587,7 @@ function Targeting.FindTarget(Settings, Utils, Aimbot)
                                     lastPosition = bestPart.Position,
                                     distance = screenDistance,
                                     worldDistance = worldDistance,
-                                    isFreefalling = isFalling,
+                                    isFreefalling = stableFalling,
                                     isVisible = isVisible 
                                 }
                             end
