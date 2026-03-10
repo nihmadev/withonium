@@ -4336,24 +4336,9 @@ function Hitboxes.UpdateHitboxes(Aimbot, Settings, Utils, ESP)
                 end
                 
                 
-                
-                
-                
                 local visual = part:FindFirstChild("HitboxVisual")
-                if not visual then
-                    visual = Instance.new("SelectionBox")
-                    visual.Name = "HitboxVisual"
-                    visual.LineThickness = 0.005 
-                    visual.Adornee = part
-                    visual.Color3 = Color3.fromRGB(255, 255, 255)
-                    visual.Transparency = 0.9 
-                    visual.Parent = part
-                end
-                visual.Visible = true
+                if visual then visual:Destroy() end
             else
-                local visual = part:FindFirstChild("HitboxVisual")
-                if visual then visual.Visible = false end
-                
                 local orig = Hitboxes.OriginalProperties[part]
                 if orig and part.Transparency ~= orig.Transparency then
                     part.Transparency = orig.Transparency

@@ -109,25 +109,10 @@ function Hitboxes.UpdateHitboxes(Aimbot, Settings, Utils, ESP)
                     part.Transparency = 0.8
                 end
                 
-                -- Проблема "белой обводки" у 50/50 игроков:
-                -- У некоторых игроков части - это MeshPart, у других - обычные Parts.
-                -- SelectionBox на огромном хитбоксе выглядит как пустой квадрат.
-                -- Решение: Делаем обводку максимально тонкой или убираем, если она мешает "скину".
+                -- Удаляем любую старую обводку, если она осталась
                 local visual = part:FindFirstChild("HitboxVisual")
-                if not visual then
-                    visual = Instance.new("SelectionBox")
-                    visual.Name = "HitboxVisual"
-                    visual.LineThickness = 0.005 -- Почти невидимая нить
-                    visual.Adornee = part
-                    visual.Color3 = Color3.fromRGB(255, 255, 255)
-                    visual.Transparency = 0.9 -- Делаем обводку почти незаметной, чтобы видеть только скин
-                    visual.Parent = part
-                end
-                visual.Visible = true
+                if visual then visual:Destroy() end
             else
-                local visual = part:FindFirstChild("HitboxVisual")
-                if visual then visual.Visible = false end
-                
                 local orig = Hitboxes.OriginalProperties[part]
                 if orig and part.Transparency ~= orig.Transparency then
                     part.Transparency = orig.Transparency
