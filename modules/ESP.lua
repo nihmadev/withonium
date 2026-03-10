@@ -48,7 +48,7 @@ function ESP.Update(Settings, deltaTime, Utils, Aimbot)
     local bestTargetPlayer = nil
     local bestTargetChar = nil
     local bestTargetItems = nil
-    local minScreenDist = 250 
+    local minScreenDist = 60
     
     local activeHighlights = 0
     local maxHighlights = 15 

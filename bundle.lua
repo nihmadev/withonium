@@ -1199,7 +1199,7 @@ function ESP.Update(Settings, deltaTime, Utils, Aimbot)
     local bestTargetPlayer = nil
     local bestTargetChar = nil
     local bestTargetItems = nil
-    local minScreenDist = 250 
+    local minScreenDist = 60
     
     local activeHighlights = 0
     local maxHighlights = 15 
@@ -5221,12 +5221,33 @@ function GlobalEnemySlots.Init(GUI)
     frame.BackgroundTransparency = 1
     frame.Position = UDim2.new(0.5, 0, 1, -95) 
     frame.AnchorPoint = Vector2.new(0.5, 1)
-    frame.Size = UDim2.new(0, 350, 0, 120)
+    frame.Size = UDim2.new(0, 350, 0, 140)
     frame.Visible = false
     frame.Parent = GUI.ScreenGui
     
+    local nameHeader = Instance.new("TextLabel")
+    nameHeader.Name = "PlayerName"
+    nameHeader.Size = UDim2.new(1, 0, 0, 20)
+    nameHeader.Position = UDim2.new(0, 0, 0, -5)
+    nameHeader.BackgroundTransparency = 1
+    nameHeader.Font = Enum.Font.GothamBold
+    nameHeader.TextColor3 = Color3.new(1, 1, 1)
+    nameHeader.TextSize = 14
+    nameHeader.TextStrokeTransparency = 0.5
+    nameHeader.TextXAlignment = Enum.TextXAlignment.Center
+    nameHeader.Text = "Target Player"
+    nameHeader.Parent = frame
+    GlobalEnemySlots.NameLabel = nameHeader
+    
+    local gridFrame = Instance.new("Frame")
+    gridFrame.Name = "Grid"
+    gridFrame.BackgroundTransparency = 1
+    gridFrame.Position = UDim2.new(0, 0, 0, 20)
+    gridFrame.Size = UDim2.new(1, 0, 1, -20)
+    gridFrame.Parent = frame
+    
     local layout = Instance.new("UIGridLayout")
-    layout.Parent = frame
+    layout.Parent = gridFrame
     layout.CellPadding = UDim2.new(0, 6, 0, 6)
     layout.CellSize = UDim2.new(0, 52, 0, 52) 
     layout.FillDirection = Enum.FillDirection.Horizontal
@@ -5239,7 +5260,7 @@ function GlobalEnemySlots.Init(GUI)
         slot.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
         slot.BackgroundTransparency = 0.4
         slot.BorderSizePixel = 1
-        slot.Parent = frame
+        slot.Parent = gridFrame
         
         local stroke = Instance.new("UIStroke")
         stroke.Color = Color3.fromRGB(80, 80, 80)
@@ -5297,6 +5318,10 @@ function GlobalEnemySlots.Update(Settings, player, character, items)
     
     GlobalEnemySlots.Frame.Visible = true
     GlobalEnemySlots.CurrentPlayer = player
+    
+    if GlobalEnemySlots.NameLabel then
+        GlobalEnemySlots.NameLabel.Text = player.DisplayName or player.Name
+    end
     
     local now = tick()
     if now - GlobalEnemySlots.LastUpdate < 0.1 then return end 
