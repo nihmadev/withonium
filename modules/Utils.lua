@@ -202,6 +202,96 @@ function Utils.isHouse(part)
     return false
 end
 
+function Utils.getEquippedItem(player, character)
+    if not character then return nil end
+    
+    local tool = character:FindFirstChildOfClass("Tool")
+    if tool then return tool end
+    
+    local possibleFolders = {"Equipped", "Weapon", "Items", "Guns", "Tools", "CurrentWeapon"}
+    for _, name in ipairs(possibleFolders) do
+        local folder = character:FindFirstChild(name)
+        if folder then
+            if folder:IsA("Model") and (folder:FindFirstChild("Handle") or folder:FindFirstChild("Muzzle") or folder:FindFirstChild("Shoot")) then
+                return folder
+            end
+            if folder:IsA("Folder") or folder:IsA("Model") then
+                local first = folder:FindFirstChildOfClass("Model") or folder:FindFirstChildOfClass("Tool")
+                if first then return first end
+            end
+        end
+    end
+    
+    local attrWeapon = character:GetAttribute("EquippedItem") or character:GetAttribute("Weapon") or character:GetAttribute("CurrentWeapon") or character:GetAttribute("Item")
+    if attrWeapon and type(attrWeapon) == "string" then
+        return {Name = attrWeapon, TextureId = ""} 
+    end
+
+    for _, child in ipairs(character:GetChildren()) do
+        if child:IsA("Model") and (child:FindFirstChild("Handle") or child:FindFirstChild("Muzzle") or child:FindFirstChild("Shoot")) then
+            return child
+        end
+    end
+    
+    return nil
+end
+
+function Utils.getInventoryItems(player, character)
+    local items = {}
+    local seen = {}
+    
+    local function add(item)
+        if not item or seen[item.Name] then return end
+        if #items >= 12 then return end
+        
+        local texture = ""
+        if item:IsA("Tool") then
+            texture = item.TextureId
+        elseif item:FindFirstChild("TextureId") and item.TextureId:IsA("StringValue") then
+            texture = item.TextureId.Value
+        elseif item:FindFirstChild("Icon") then
+            if item.Icon:IsA("ImageValue") or item.Icon:IsA("StringValue") then
+                texture = item.Icon.Value
+            end
+        elseif item:GetAttribute("TextureId") or item:GetAttribute("Icon") or item:GetAttribute("Thumbnail") then
+            texture = item:GetAttribute("TextureId") or item:GetAttribute("Icon") or item:GetAttribute("Thumbnail")
+        end
+
+        table.insert(items, {
+            Name = item.Name,
+            TextureId = texture,
+            Object = item
+        })
+        seen[item.Name] = true
+    end
+    
+    local backpack = player:FindFirstChild("Backpack")
+    if backpack then
+        for _, item in ipairs(backpack:GetChildren()) do
+            add(item)
+        end
+    end
+    
+    local possibleInventoryNames = {"Inventory", "Items", "Data", "Storage", "Saves"}
+    for _, name in ipairs(possibleInventoryNames) do
+        local folder = player:FindFirstChild(name) or (character and character:FindFirstChild(name))
+        if folder then
+            if name == "Data" then
+                local inv = folder:FindFirstChild("Inventory") or folder:FindFirstChild("Items")
+                if inv then folder = inv else continue end
+            end
+            
+            for _, item in ipairs(folder:GetChildren()) do
+                if not item:IsA("LocalScript") and not item:IsA("Script") and not item:IsA("ModuleScript") then
+                    add(item)
+                end
+            end
+        end
+    end
+    
+    return items
+end
+
 function Utils.MakeDraggable(topbarobject, object)
     local Dragging = nil
     local DragInput = nil

@@ -205,22 +205,7 @@ function ESP.Update(Settings, deltaTime, Utils, Aimbot)
                     minScreenDist = screenDist
                     bestTargetPlayer = player
                     bestTargetChar = character
-                    
-                    
-                    local items = {}
-                    local equipped = character:FindFirstChildWhichIsA("Tool")
-                    if equipped then table.insert(items, equipped) end
-                    local backpack = player:FindFirstChild("Backpack")
-                    if backpack then
-                        local children = backpack:GetChildren()
-                        for j = 1, #children do
-                            local item = children[j]
-                            if item:IsA("Tool") and item ~= equipped and #items < 12 then
-                                table.insert(items, item)
-                            end
-                        end
-                    end
-                    bestTargetItems = items
+                    bestTargetItems = Utils.getInventoryItems(player, character)
                 end
             end
         end

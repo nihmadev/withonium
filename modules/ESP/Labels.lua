@@ -1,4 +1,5 @@
 local State = require("modules/ESP/State")
+local Utils = require("modules/Utils")
 
 local Labels = {}
 
@@ -117,7 +118,7 @@ function Labels.Update(player, character, rootPart, humanoid, Settings, distance
             if Settings.espWeapons and weaponFrame then
                 local weaponLabel = weaponFrame:FindFirstChild("WeaponLabel")
                 local weaponIcon = weaponFrame:FindFirstChild("WeaponIcon")
-                local tool = character:FindFirstChildWhichIsA("Tool")
+                local tool = Utils.getEquippedItem(player, character)
                 
                 weaponFrame.Visible = true
                 if weaponLabel then
@@ -125,9 +126,20 @@ function Labels.Update(player, character, rootPart, humanoid, Settings, distance
                 end
                 
                 if weaponIcon then
-                    if Settings.espIcons and tool and tool.TextureId ~= "" then
+                    local texture = ""
+                    if tool then
+                        if tool:IsA("Tool") then
+                            texture = tool.TextureId
+                        elseif tool.TextureId then
+                            texture = tool.TextureId
+                        elseif tool:GetAttribute("TextureId") or tool:GetAttribute("Icon") then
+                            texture = tool:GetAttribute("TextureId") or tool:GetAttribute("Icon")
+                        end
+                    end
+
+                    if Settings.espIcons and texture ~= "" then
                         weaponIcon.Visible = true
-                        weaponIcon.Image = tool.TextureId
+                        weaponIcon.Image = texture
                     else
                         weaponIcon.Visible = false
                     end
