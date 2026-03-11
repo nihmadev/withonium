@@ -99,28 +99,52 @@ function Hitboxes.UpdateHitboxes(Aimbot, Settings, Utils, ESP)
             end
             
             
-            if part.Size ~= targetSize then
-                part.Size = targetSize
-                part.CanCollide = false 
-                part.CanTouch = true 
-                part.Massless = true
-                
-            end
-
+            
+            if part.CanCollide ~= false then part.CanCollide = false end
+            if part.CanTouch ~= true then part.CanTouch = true end
+            if part.Massless ~= true then part.Massless = true end
+            
+            
+            pcall(function()
+                if part.CanQuery ~= true then part.CanQuery = true end
+            end)
             
             if Settings.hitboxExpanderShow then
-                if part.Transparency ~= 0.8 then
-                    part.Transparency = 0.8
+                if part.Size ~= targetSize then
+                    part.Size = targetSize
+                end
+                
+                
+                if part.Transparency ~= 0.95 then
+                    part.Transparency = 0.95
                 end
                 
                 
                 local visual = part:FindFirstChild("HitboxVisual")
-                if visual then visual:Destroy() end
-            else
-                local orig = Hitboxes.OriginalProperties[part]
-                if orig and part.Transparency ~= orig.Transparency then
-                    part.Transparency = orig.Transparency
+                if not visual or not visual:IsA("SelectionBox") then
+                    if visual then visual:Destroy() end
+                    visual = Instance.new("SelectionBox")
+                    visual.Name = "HitboxVisual"
+                    visual.LineThickness = 0.015 
+                    visual.SurfaceColor3 = Color3.fromRGB(255, 0, 0) 
+                    visual.SurfaceTransparency = 0.9 
+                    visual.Color3 = Color3.fromRGB(255, 255, 255) 
+                    visual.AlwaysOnTop = true
+                    visual.Adornee = part
+                    visual.Parent = part
                 end
+            else
+                
+                
+                local orig = Hitboxes.OriginalProperties[part]
+                if orig then
+                    if part.Size ~= orig.Size then part.Size = orig.Size end
+                    if part.Transparency ~= orig.Transparency then part.Transparency = orig.Transparency end
+                    if part.CanCollide ~= orig.CanCollide then part.CanCollide = orig.CanCollide end
+                end
+                
+                local visual = part:FindFirstChild("HitboxVisual")
+                if visual then visual:Destroy() end
             end
         end
     end
