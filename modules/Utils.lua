@@ -208,28 +208,56 @@ function Utils.getEquippedItem(player, character)
     local tool = character:FindFirstChildOfClass("Tool")
     if tool then return tool end
     
-    local possibleFolders = {"Equipped", "Weapon", "Items", "Guns", "Tools", "CurrentWeapon"}
+    local possibleFolders = {"Equipped", "Weapon", "Items", "Guns", "Tools", "CurrentWeapon", "Worldmodel"}
     for _, name in ipairs(possibleFolders) do
-        local folder = character:FindFirstChild(name)
-        if folder then
-            if folder:IsA("Model") and (folder:FindFirstChild("Handle") or folder:FindFirstChild("Muzzle") or folder:FindFirstChild("Shoot")) then
-                return folder
-            end
-            if folder:IsA("Folder") or folder:IsA("Model") then
-                local first = folder:FindFirstChildOfClass("Model") or folder:FindFirstChildOfClass("Tool")
+        local obj = character:FindFirstChild(name)
+        if obj then
+            if obj:IsA("Model") then
+                if obj:FindFirstChild("Handle") or obj:FindFirstChild("Muzzle") or obj:FindFirstChild("Shoot") or obj:FindFirstChild("Body") then
+                    return obj
+                end
+                
+                local first = obj:FindFirstChildOfClass("Model") or obj:FindFirstChildOfClass("Tool")
+                if first then return first end
+            elseif obj:IsA("Folder") then
+                local first = obj:FindFirstChildOfClass("Model") or obj:FindFirstChildOfClass("Tool")
                 if first then return first end
             end
         end
     end
     
-    local attrWeapon = character:GetAttribute("EquippedItem") or character:GetAttribute("Weapon") or character:GetAttribute("CurrentWeapon") or character:GetAttribute("Item")
-    if attrWeapon and type(attrWeapon) == "string" then
+    local attrWeapon = character:GetAttribute("EquippedItem") or character:GetAttribute("Weapon") or character:GetAttribute("CurrentWeapon") or character:GetAttribute("Item") or character:GetAttribute("HeldItem") or character:GetAttribute("Equipped")
+    if attrWeapon and type(attrWeapon) == "string" and attrWeapon ~= "" then
         return {Name = attrWeapon, TextureId = ""} 
     end
+    
+    local valWeapon = character:FindFirstChild("EquippedWeapon") or character:FindFirstChild("CurrentWeapon") or character:FindFirstChild("Weapon")
+    if valWeapon and (valWeapon:IsA("StringValue") or valWeapon:IsA("ObjectValue")) then
+        if valWeapon:IsA("StringValue") and valWeapon.Value ~= "" then
+            return {Name = valWeapon.Value, TextureId = ""}
+        elseif valWeapon:IsA("ObjectValue") and valWeapon.Value then
+            return valWeapon.Value
+        end
+    end
 
+    local keywords = {"axe", "pickaxe", "sword", "gun", "rifle", "pistol", "bow", "hammer", "tool", "weapon", "spear", "blade", "knife", "bat", "club"}
     for _, child in ipairs(character:GetChildren()) do
-        if child:IsA("Model") and (child:FindFirstChild("Handle") or child:FindFirstChild("Muzzle") or child:FindFirstChild("Shoot")) then
-            return child
+        if child:IsA("Model") then
+            local name = child.Name:lower()
+            if name == "worldmodel" or name == "viewmodel" or name == "anim" or name == "rig" then
+                continue
+            end
+            
+            local matches = false
+            for _, kw in ipairs(keywords) do
+                if name:find(kw) then matches = true break end
+            end
+            
+            if matches or child:FindFirstChild("Handle") or child:FindFirstChild("Muzzle") or child:FindFirstChild("Shoot") or child:FindFirstChild("FirePoint") then
+                if child.Name ~= "Head" and child.Name ~= "HumanoidRootPart" and not child.Name:find("Torso") and not child.Name:find("Leg") and not child.Name:find("Arm") then
+                    return child
+                end
+            end
         end
     end
     
@@ -247,11 +275,13 @@ function Utils.getInventoryItems(player, character)
         local texture = ""
         if item:IsA("Tool") then
             texture = item.TextureId
-        elseif item:FindFirstChild("TextureId") and item.TextureId:IsA("StringValue") then
-            texture = item.TextureId.Value
+        elseif item:FindFirstChild("TextureId") then
+            local tid = item:FindFirstChild("TextureId")
+            texture = (tid:IsA("StringValue") or tid:IsA("ImageValue")) and tid.Value or ""
         elseif item:FindFirstChild("Icon") then
-            if item.Icon:IsA("ImageValue") or item.Icon:IsA("StringValue") then
-                texture = item.Icon.Value
+            local icon = item:FindFirstChild("Icon")
+            if icon:IsA("ImageValue") or icon:IsA("StringValue") then
+                texture = icon.Value
             end
         elseif item:GetAttribute("TextureId") or item:GetAttribute("Icon") or item:GetAttribute("Thumbnail") then
             texture = item:GetAttribute("TextureId") or item:GetAttribute("Icon") or item:GetAttribute("Thumbnail")
@@ -265,6 +295,9 @@ function Utils.getInventoryItems(player, character)
         seen[item.Name] = true
     end
     
+    local equipped = Utils.getEquippedItem(player, character)
+    if equipped then add(equipped) end
+    
     local backpack = player:FindFirstChild("Backpack")
     if backpack then
         for _, item in ipairs(backpack:GetChildren()) do
@@ -272,19 +305,27 @@ function Utils.getInventoryItems(player, character)
         end
     end
     
-    local possibleInventoryNames = {"Inventory", "Items", "Data", "Storage", "Saves"}
+    local possibleInventoryNames = {"Inventory", "Items", "Data", "Storage", "Saves", "QuickSlots", "Hotbar"}
     for _, name in ipairs(possibleInventoryNames) do
         local folder = player:FindFirstChild(name) or (character and character:FindFirstChild(name))
         if folder then
             if name == "Data" then
                 local inv = folder:FindFirstChild("Inventory") or folder:FindFirstChild("Items")
-                if inv then folder = inv else continue end
+                if inv then folder = inv end
             end
             
             for _, item in ipairs(folder:GetChildren()) do
                 if not item:IsA("LocalScript") and not item:IsA("Script") and not item:IsA("ModuleScript") then
                     add(item)
                 end
+            end
+        end
+    end
+    
+    for _, child in ipairs(character:GetChildren()) do
+        if child:IsA("Folder") and child.Name:find("Inventory") then
+            for _, item in ipairs(child:GetChildren()) do
+                add(item)
             end
         end
     end

@@ -122,7 +122,15 @@ function Labels.Update(player, character, rootPart, humanoid, Settings, distance
                 
                 weaponFrame.Visible = true
                 if weaponLabel then
-                    weaponLabel.Text = tool and tool.Name or "None"
+                    local name = "None"
+                    if tool then
+                        name = tool.Name
+                        if name == "Worldmodel" or name == "Viewmodel" or name == "Rig" then
+                            local real = tool:FindFirstChildOfClass("Model") or tool:FindFirstChildOfClass("Tool")
+                            if real then name = real.Name else name = "None" end
+                        end
+                    end
+                    weaponLabel.Text = name
                 end
                 
                 if weaponIcon then
@@ -130,8 +138,9 @@ function Labels.Update(player, character, rootPart, humanoid, Settings, distance
                     if tool then
                         if tool:IsA("Tool") then
                             texture = tool.TextureId
-                        elseif tool.TextureId then
-                            texture = tool.TextureId
+                        elseif tool:FindFirstChild("TextureId") then
+                            local tid = tool:FindFirstChild("TextureId")
+                            texture = tid:IsA("StringValue") and tid.Value or ""
                         elseif tool:GetAttribute("TextureId") or tool:GetAttribute("Icon") then
                             texture = tool:GetAttribute("TextureId") or tool:GetAttribute("Icon")
                         end
